@@ -1313,6 +1313,8 @@ export default function FeederWorkspace({
               preferences={preferences}
               initialPayload={payload}
               onHarvested={(incoming, append, source) => {
+                if (source && incoming.health.some((health) => health.section !== 'social'))
+                  setVideoFetchStarted(false);
                 setPayload((current) =>
                   append
                     ? appendHarvestPayload(current, incoming)

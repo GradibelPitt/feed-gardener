@@ -1,6 +1,12 @@
 import { fetchArxiv } from './arxiv.ts';
 import { fetchBilibiliSearchPage } from './bilibili.ts';
 import { fetchGithub } from './github.ts';
+import {
+  fetchGoogleScholar,
+  scholarConfigured,
+  scholarKeyRevision,
+  scholarPendingHealth,
+} from './google-scholar.ts';
 import { fetchHackerNews } from './hackernews.ts';
 import { socialHealth } from './social.ts';
 import {
@@ -98,7 +104,7 @@ export async function harvestPublicSources(
     .map((tag) => tag.trim())
     .filter(Boolean)
     .slice(0, 2);
-  const cacheKey = `${source ?? 'all'}\u0001${terms.join('\u0000')}\u0001${localizedTags.join('\u0000')}\u0001${cursor ?? ''}\u0001${youtubeSearchKeyRevision()}`;
+  const cacheKey = `${source ?? 'all'}\u0001${terms.join('\u0000')}\u0001${localizedTags.join('\u0000')}\u0001${cursor ?? ''}\u0001${youtubeSearchKeyRevision()}\u0001${scholarKeyRevision()}`;
   const snapshot = cached.get(cacheKey);
   if (!forceRefresh && snapshot && snapshot.expiresAt > now) {
     return { ...snapshot.payload, cache: 'hit' };
@@ -107,6 +113,9 @@ export async function harvestPublicSources(
   const previous = snapshot?.payload ?? null;
   const results = await Promise.all([
     ...(!source || source === 'arXiv' ? [collect('arXiv', 'academic', () => fetchArxiv(14))] : []),
+    ...((!source || source === 'Google Scholar') && scholarConfigured() && terms.length
+      ? [collect('Google Scholar', 'academic', () => fetchGoogleScholar(terms))]
+      : []),
     ...(!source || source === 'GitHub' ? [collect('GitHub', 'opensource', fetchGithub)] : []),
     ...(!source || source === 'Hacker News'
       ? [collect('Hacker News', 'opensource', fetchHackerNews)]
@@ -131,6 +140,8 @@ export async function harvestPublicSources(
 
   if (
     noFreshItems &&
+    results.length > 0 &&
+    results.every((result) => Boolean(result.warning)) &&
     previous &&
     (previous.sections.social.length ||
       previous.sections.academic.length ||
@@ -139,6 +150,10 @@ export async function harvestPublicSources(
     return {
       ...previous,
       cache: 'stale_fallback',
+      health: previous.health.map((health) => {
+        const failed = results.find((result) => result.source === health.source);
+        return failed ? { ...healthFor(failed), itemCount: health.itemCount } : health;
+      }),
       warnings: [
         ...results.flatMap((result) => (result.warning ? [result.warning] : [])),
         'All live sources failed; serving the last in-memory snapshot.',
@@ -151,6 +166,7 @@ export async function harvestPublicSources(
     cache: 'fresh',
     sections: { social, academic, opensource },
     health: [
+      ...(!source || source === 'Google Scholar' ? scholarPendingHealth(terms.length > 0) : []),
       ...socialHealth().filter((item) => !source || item.source === source),
       ...((!source || source === 'Bilibili') && !terms.length
         ? [

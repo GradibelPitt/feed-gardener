@@ -2,6 +2,7 @@ import { apiError, apiSuccess } from '@/lib/api-contract';
 import { harvestPublicSources } from '@/lib/crawler/harvest';
 import { LIVE_SOURCES, type LiveSource } from '@/lib/crawler/types';
 import { setYouTubeSearchApiKey } from '@/lib/crawler/youtube';
+import { setScholarApiKey } from '@/lib/crawler/google-scholar';
 
 export const runtime = 'nodejs';
 
@@ -68,13 +69,16 @@ export async function PUT(request: Request) {
   const input = body as { source?: unknown; apiKey?: unknown } | null;
   if (
     !input ||
-    input.source !== 'YouTube' ||
+    (input.source !== 'YouTube' && input.source !== 'Google Scholar') ||
     typeof input.apiKey !== 'string' ||
     (input.apiKey.trim() !== '' && !/^[A-Za-z0-9_-]{20,256}$/.test(input.apiKey.trim()))
   ) {
-    return apiError(422, 'INVALID_YOUTUBE_KEY', 'Enter a valid YouTube Data API key.');
+    return input?.source === 'Google Scholar'
+      ? apiError(422, 'INVALID_SCHOLAR_KEY', 'Enter a valid SerpApi key.')
+      : apiError(422, 'INVALID_YOUTUBE_KEY', 'Enter a valid YouTube Data API key.');
   }
-  setYouTubeSearchApiKey(input.apiKey.trim());
+  if (input.source === 'Google Scholar') setScholarApiKey(input.apiKey.trim());
+  else setYouTubeSearchApiKey(input.apiKey.trim());
   return apiSuccess(
     { configured: input.apiKey.trim() !== '' },
     { headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } },

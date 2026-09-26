@@ -8,7 +8,7 @@ Your interests and feedback belong to Feed Gardener. The app does not train or m
 
 ## What it does
 
-- **Discover across sources.** Fetch public candidates from arXiv, GitHub, Hacker News, Bilibili, and configured YouTube search. Bilibili searches English and Chinese interest labels together and displays video cards.
+- **Discover across sources.** Fetch public candidates from arXiv, GitHub, Hacker News, Bilibili, configured YouTube search, and Google Scholar via SerpApi. Bilibili searches English and Chinese interest labels together and displays video cards.
 - **Control relevance.** Choose a minimum Jev score from 1 to 10. Every displayed item must meet that score with at least 70% confidence, including Bilibili and YouTube. Pending or unavailable scores stay hidden; fewer matches never lower the threshold.
 - **Set hard boundaries.** Selected interests guide discovery; blocked topics and sources stay excluded.
 - **Understand each recommendation.** Every item can explain which interests, source, and freshness signals placed it in the feed.
@@ -156,3 +156,11 @@ pnpm typecheck
 pnpm test
 pnpm build
 ```
+
+### Google Scholar
+
+Open **Discover → Sources → Research frontier → Google Scholar**. Enter a [SerpApi key](https://serpapi.com/manage-api-key), choose your interests, then click **Save & search** (or **Refresh** after changing interests). Searches use the [SerpApi Google Scholar API](https://serpapi.com/google-scholar-api) and your provider quota. Each search combines up to two selected interests and requests up to 20 papers. Results join **For you** after the existing interest and Jev relevance filters; saved results are classified as papers in Resources.
+
+For persistent server configuration, set `SERPAPI_API_KEY` in your ignored `.env.local` (or `.env.production.local` when running the production server), then restart. Keys entered in the page stay in local server memory until restart and are sent only to SerpApi for searches. **Clear local key** disables Scholar search for the current process. Missing keys, missing interests, failed searches, and quota errors have separate states; no paper results are fabricated.
+
+On Sites, the owner must configure `SERPAPI_API_KEY` as a server environment variable and redeploy. The public page shows connection status; local key-entry and key-clearing controls are unavailable there.

@@ -144,6 +144,7 @@ export function inferResourceType(url: string, source = ''): ResourceType {
   const parsed = parseResourceUrl(url);
   const host = parsed?.hostname.replace(/^www\./i, '') ?? '';
   const path = parsed?.pathname.toLowerCase() ?? '';
+  if (source === 'Google Scholar' || host === 'scholar.google.com') return 'paper';
   if (/\.(mp4|webm|mov)$/.test(path)) return 'video';
   if (/\.(mp3|wav|m4a|ogg)$/.test(path)) return 'audio';
   if (/\.(pdf|docx?|pptx?|xlsx?)$/.test(path)) return 'document';
