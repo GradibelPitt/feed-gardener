@@ -44,7 +44,7 @@ type Props = {
 const SOCIAL_STORAGE = 'feed-gardener-social-imports-v1';
 const sectionSources: Record<FeedSection, LiveSource[]> = {
   social: ['YouTube', 'Bilibili'],
-  academic: ['arXiv'],
+  academic: ['arXiv', 'Google Scholar'],
   opensource: ['GitHub', 'Hacker News'],
 };
 const urlSources = new Set<LiveSource>(['TikTok', 'Instagram', 'X']);
@@ -55,6 +55,7 @@ const sourcePrompt: Record<LiveSource, string> = {
   YouTube: 'Select to fetch videos',
   Bilibili: 'Select to fetch videos',
   arXiv: 'Select to fetch papers',
+  'Google Scholar': 'Select to fetch papers',
   GitHub: 'Select to fetch repositories',
   'Hacker News': 'Select to fetch stories',
 };
@@ -96,6 +97,7 @@ const sourceMark: Record<LiveSource, string> = {
   Instagram: 'IG',
   X: 'X',
   arXiv: 'AX',
+  'Google Scholar': 'GS',
   GitHub: 'GH',
   'Hacker News': 'HN',
 };
@@ -164,9 +166,10 @@ export default function SourceBoards({
   const [socialImports, setSocialImports] = useState<HarvestItem[]>([]);
   const [socialBusy, setSocialBusy] = useState(false);
   const [socialError, setSocialError] = useState('');
-  const [youtubeApiKey, setYoutubeApiKey] = useState('');
-  const [youtubeKeyBusy, setYoutubeKeyBusy] = useState(false);
-  const [youtubeKeyError, setYoutubeKeyError] = useState('');
+  const [localKeyConfiguration, setLocalKeyConfiguration] = useState(false);
+  const [sourceApiKey, setSourceApiKey] = useState('');
+  const [sourceKeyBusy, setSourceKeyBusy] = useState(false);
+  const [sourceKeyError, setSourceKeyError] = useState('');
   const [jevFallbackOpen, setJevFallbackOpen] = useState(false);
   const [videoCursors, setVideoCursors] = useState<Partial<Record<LiveSource, string | null>>>({});
   const [loadingMore, setLoadingMore] = useState(false);
@@ -176,6 +179,12 @@ export default function SourceBoards({
   useEffect(() => {
     setPayload(initialPayload ?? null);
   }, [initialPayload]);
+
+  useEffect(() => {
+    setLocalKeyConfiguration(
+      ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname),
+    );
+  }, []);
 
   const loadSource = async (source: LiveSource, refresh = false) => {
     if (source === 'YouTube' || source === 'Bilibili') onVideoFetchStart?.(source);
@@ -250,8 +259,8 @@ export default function SourceBoards({
     setSelectedSource(source);
     setLoadError('');
     setSocialError('');
-    setYoutubeApiKey('');
-    setYoutubeKeyError('');
+    setSourceApiKey('');
+    setSourceKeyError('');
     if (source === 'Bilibili' && !hasSearchInterests) {
       onEditInterests();
       return;
@@ -273,60 +282,63 @@ export default function SourceBoards({
   const isVideoSource = selectedSource === 'YouTube' || selectedSource === 'Bilibili';
   const health = payload?.health.filter((item) => item.section === active) ?? [];
   const selectedHealth = health.find((item) => item.source === selectedSource);
+  const keySource =
+    selectedSource === 'YouTube' || selectedSource === 'Google Scholar' ? selectedSource : null;
+  const isScholar = keySource === 'Google Scholar';
+  const keyLabel = isScholar ? 'SerpApi key' : 'YouTube Data API key';
   const activeMeta = sectionMeta.find((section) => section.id === active) ?? sectionMeta[0];
   const crawlerNeedsAttention =
     active !== 'social' && (Boolean(loadError) || selectedHealth?.state === 'error');
 
-  const configureYouTube = async (event: React.FormEvent) => {
+  const configureSource = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!youtubeApiKey.trim() || youtubeKeyBusy) return;
-    setYoutubeKeyBusy(true);
-    setYoutubeKeyError('');
+    if (!sourceApiKey.trim() || sourceKeyBusy || !keySource) return;
+    const source = keySource;
+    setSourceKeyBusy(true);
+    setSourceKeyError('');
     try {
       const response = await fetch('/api/harvest', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
-        body: JSON.stringify({ source: 'YouTube', apiKey: youtubeApiKey.trim() }),
+        body: JSON.stringify({ source, apiKey: sourceApiKey.trim() }),
       });
       await readApiData<{ configured: boolean }>(response);
-      setYoutubeApiKey('');
-      await loadSource('YouTube', true);
+      setSourceApiKey('');
+      await loadSource(source, true);
     } catch {
-      setYoutubeKeyError(
+      setSourceKeyError(
         t(
-          '无法配置 YouTube 搜索，请检查 key 后重试。',
-          'Could not configure YouTube search. Check the key and try again.',
+          '无法配置搜索，请检查 key 后重试。',
+          'Could not configure search. Check the key and try again.',
         ),
       );
     } finally {
-      setYoutubeKeyBusy(false);
+      setSourceKeyBusy(false);
     }
   };
 
-  const clearYouTube = async () => {
-    if (youtubeKeyBusy) return;
-    setYoutubeKeyBusy(true);
-    setYoutubeKeyError('');
+  const clearSourceKey = async () => {
+    if (sourceKeyBusy || !keySource) return;
+    const source = keySource;
+    setSourceKeyBusy(true);
+    setSourceKeyError('');
     try {
       const response = await fetch('/api/harvest', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
-        body: JSON.stringify({ source: 'YouTube', apiKey: '' }),
+        body: JSON.stringify({ source, apiKey: '' }),
       });
       await readApiData<{ configured: boolean }>(response);
-      setYoutubeApiKey('');
-      await loadSource('YouTube', true);
+      setSourceApiKey('');
+      await loadSource(source, true);
     } catch {
-      setYoutubeKeyError(
-        t(
-          '无法清除本机 YouTube key，请重试。',
-          'Could not clear the local YouTube key. Try again.',
-        ),
+      setSourceKeyError(
+        t('无法清除本机 key，请重试。', 'Could not clear the local key. Try again.'),
       );
     } finally {
-      setYoutubeKeyBusy(false);
+      setSourceKeyBusy(false);
     }
   };
 
@@ -391,13 +403,14 @@ export default function SourceBoards({
               role="tab"
               aria-selected={active === section.id}
               aria-controls="source-board-panel"
+              disabled={sourceKeyBusy}
               tabIndex={active === section.id ? 0 : -1}
               onClick={() => {
                 setActive(section.id);
                 setSelectedSource(null);
                 setJevFallbackOpen(false);
-                setYoutubeApiKey('');
-                setYoutubeKeyError('');
+                setSourceApiKey('');
+                setSourceKeyError('');
               }}
               onKeyDown={(event) => {
                 if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
@@ -460,7 +473,7 @@ export default function SourceBoards({
                     <button
                       className="source-refresh"
                       type="button"
-                      disabled={loadingSource !== null || youtubeKeyBusy}
+                      disabled={loadingSource !== null || sourceKeyBusy}
                       onClick={() => void loadSource(selectedSource, true)}
                     >
                       <RefreshCw size={15} className={loadingSource ? 'spinning' : ''} />
@@ -468,13 +481,15 @@ export default function SourceBoards({
                         ? t('正在刷新', 'Refreshing')
                         : t('刷新该来源', 'Refresh this source')}
                     </button>
-                    {selectedSource === 'YouTube' &&
-                      selectedHealth?.state !== 'configuration_required' && (
+                    {keySource &&
+                      (!isScholar || localKeyConfiguration) &&
+                      selectedHealth &&
+                      selectedHealth.state !== 'configuration_required' && (
                         <button
                           className="source-refresh"
                           type="button"
-                          disabled={loadingSource !== null || youtubeKeyBusy}
-                          onClick={() => void clearYouTube()}
+                          disabled={loadingSource !== null || sourceKeyBusy}
+                          onClick={() => void clearSourceKey()}
                         >
                           {t('清除本机 key', 'Clear local key')}
                         </button>
@@ -494,7 +509,7 @@ export default function SourceBoards({
                 className={`source-health ${item ? `source-health-${item.state}` : 'source-health-idle'} ${selectedSource === source ? 'source-health-active' : ''}`}
                 key={source}
                 aria-pressed={selectedSource === source}
-                disabled={loadingSource !== null || youtubeKeyBusy}
+                disabled={loadingSource !== null || sourceKeyBusy}
                 onClick={() => selectSource(source)}
               >
                 <span className="health-mark">{sourceMark[source]}</span>
@@ -601,72 +616,99 @@ export default function SourceBoards({
           </div>
         )}
 
-        {selectedSource === 'YouTube' &&
+        {keySource &&
           (selectedHealth?.state === 'configuration_required' ||
             selectedHealth?.state === 'error') && (
-            <div className="source-empty" aria-labelledby="youtube-key-prompt">
+            <div className="source-empty" aria-labelledby="source-key-prompt">
               <CircleAlert size={22} />
-              <h3 id="youtube-key-prompt" role="status">
+              <h3 id="source-key-prompt" role="status">
                 {selectedHealth.state === 'configuration_required'
-                  ? t(
-                      '请先填写 YouTube Data API key',
-                      'Enter your YouTube Data API key to continue',
-                    )
+                  ? isScholar && !localKeyConfiguration
+                    ? t('Google Scholar 尚未连接', 'Google Scholar is not connected yet')
+                    : t(`请先填写 ${keyLabel}`, `Enter your ${keyLabel} to continue`)
                   : healthText(selectedHealth, locale)}
               </h3>
-              <form className="source-key-form" onSubmit={configureYouTube}>
-                <label htmlFor="youtube-search-api-key">
-                  {t('YouTube Data API key', 'YouTube Data API key')}
-                </label>
-                <div>
-                  <input
-                    id="youtube-search-api-key"
-                    type="password"
-                    required
-                    minLength={20}
-                    maxLength={256}
-                    pattern="[A-Za-z0-9_-]{20,256}"
-                    aria-describedby="youtube-key-prompt"
-                    autoComplete="off"
-                    autoCapitalize="off"
-                    spellCheck={false}
-                    value={youtubeApiKey}
-                    onChange={(event) => {
-                      setYoutubeApiKey(event.target.value);
-                      setYoutubeKeyError('');
-                    }}
-                    placeholder={t('粘贴 API key', 'Paste API key')}
-                    disabled={youtubeKeyBusy}
-                  />
-                  <button type="submit" disabled={youtubeKeyBusy || !youtubeApiKey.trim()}>
-                    {youtubeKeyBusy
-                      ? t('连接中', 'Connecting')
-                      : interestLabels.length
-                        ? t('保存并搜索', 'Save & search')
-                        : t('保存 key', 'Save key')}
-                  </button>
-                </div>
+              {isScholar && selectedHealth.state === 'error' && (
+                <p>{payload?.warnings.find((warning) => warning.startsWith('Google Scholar:'))}</p>
+              )}
+              {isScholar && !localKeyConfiguration ? (
                 <p>
                   {t(
-                    '只存于本机服务内存；搜索时会发送给 Google 官方 API，重启后失效。',
-                    'Kept in local server memory until restart and sent to the official Google API for searches.',
+                    '站点所有者可使用 SerpApi key 连接此来源。',
+                    'The site owner can connect this source with a SerpApi key.',
                   )}
                 </p>
-                <a
-                  href="https://developers.google.com/youtube/v3/getting-started"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('如何获取 API key', 'How to get an API key')}
-                </a>
-                {youtubeKeyError && (
-                  <p className="source-key-error" role="alert">
-                    {youtubeKeyError}
+              ) : (
+                <form className="source-key-form" onSubmit={configureSource}>
+                  <label htmlFor="source-search-api-key">{keyLabel}</label>
+                  <div>
+                    <input
+                      id="source-search-api-key"
+                      type="password"
+                      required
+                      minLength={20}
+                      maxLength={256}
+                      pattern="[A-Za-z0-9_-]{20,256}"
+                      aria-describedby="source-key-prompt"
+                      autoComplete="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      value={sourceApiKey}
+                      onChange={(event) => {
+                        setSourceApiKey(event.target.value);
+                        setSourceKeyError('');
+                      }}
+                      placeholder={t('粘贴 API key', 'Paste API key')}
+                      disabled={sourceKeyBusy}
+                    />
+                    <button type="submit" disabled={sourceKeyBusy || !sourceApiKey.trim()}>
+                      {sourceKeyBusy
+                        ? t('连接中', 'Connecting')
+                        : interestLabels.length
+                          ? t('保存并搜索', 'Save & search')
+                          : t('保存 key', 'Save key')}
+                    </button>
+                  </div>
+                  <p>
+                    {isScholar
+                      ? t(
+                          '通过 SerpApi 搜索 Google Scholar；key 仅在本机内存保存，搜索时发送给 SerpApi。',
+                          'Searches Google Scholar through SerpApi. Your key stays in local server memory and is sent to SerpApi for searches.',
+                        )
+                      : t(
+                          '只存于本机服务内存；搜索时会发送给 Google 官方 API，重启后失效。',
+                          'Kept in local server memory until restart and sent to the official Google API for searches.',
+                        )}
                   </p>
-                )}
-              </form>
+                  <a
+                    href={
+                      isScholar
+                        ? 'https://serpapi.com/manage-api-key'
+                        : 'https://developers.google.com/youtube/v3/getting-started'
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('如何获取 API key', 'How to get an API key')}
+                  </a>
+                  {sourceKeyError && (
+                    <p className="source-key-error" role="alert">
+                      {sourceKeyError}
+                    </p>
+                  )}
+                </form>
+              )}
             </div>
           )}
+
+        {selectedSource === 'Google Scholar' && !loadingSource && !hasSearchInterests && (
+          <div className="source-empty">
+            <p>{t('选择兴趣后搜索论文', 'Choose interests to search for papers')}</p>
+            <button type="button" onClick={onEditInterests}>
+              {t('选择兴趣', 'Choose interests')}
+            </button>
+          </div>
+        )}
 
         <div className="source-board-toolbar">
           <span>{t('内容统一显示在「For you」', 'Browse results in For you')}</span>

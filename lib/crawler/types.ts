@@ -1,7 +1,15 @@
 export type FeedSection = 'social' | 'academic' | 'opensource';
 
 export type LiveSource =
-  'YouTube' | 'Bilibili' | 'TikTok' | 'Instagram' | 'X' | 'arXiv' | 'GitHub' | 'Hacker News';
+  | 'YouTube'
+  | 'Bilibili'
+  | 'TikTok'
+  | 'Instagram'
+  | 'X'
+  | 'arXiv'
+  | 'Google Scholar'
+  | 'GitHub'
+  | 'Hacker News';
 
 export const LIVE_SOURCES: readonly LiveSource[] = [
   'YouTube',
@@ -10,6 +18,7 @@ export const LIVE_SOURCES: readonly LiveSource[] = [
   'Instagram',
   'X',
   'arXiv',
+  'Google Scholar',
   'GitHub',
   'Hacker News',
 ];

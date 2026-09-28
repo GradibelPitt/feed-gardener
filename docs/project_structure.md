@@ -115,6 +115,7 @@ feed_gardener_project_pack/
     │   │   ├── bilibili.ts
     │   │   ├── core.ts
     │   │   ├── github.ts
+    │   │   ├── google-scholar.ts
     │   │   ├── hackernews.ts
     │   │   ├── harvest.ts
     │   │   ├── merge.ts
@@ -139,6 +140,7 @@ feed_gardener_project_pack/
     │   ├── feeder.ts
     │   ├── garden.test.ts
     │   ├── garden.ts
+    │   ├── google-scholar.test.ts
     │   ├── harvest.test.ts
     │   ├── locale.test.ts
     │   ├── locale.ts
