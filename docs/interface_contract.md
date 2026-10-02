@@ -15,11 +15,13 @@ CLI 直接调用现有 `lib/` 领域函数，命令行参数不是 HTTP API。CL
 
 Bilibili 复用 `GET /api/harvest` 的 `source=Bilibili` 和 `tag` 参数；可选、按位置对应的 `tagZh` 参数提供最多两个中文对照。服务端也会把内置标签的英文名映射到已有中文名，对每个兴趣并行请求中英文公开搜索，按 BV 号去重。只读取公开搜索元数据，不读取账号、Cookie 或播放流。卡片显示封面、标题、UP 主、公开标签和 Bilibili 官方外链播放器；播放器仅在用户点击后加载。Bilibili 卡片可进入 Feeder 候选与 Jev 标题评分；评分输入把中英文同义名称写在同一个兴趣项中。公开搜索接口可能限制请求；失败时 `health` 显示来源错误，其他来源继续工作。
 
-`GET /api/harvest` 还可选传单个 `source`，取值为既有来源名 `arXiv`、`Google Scholar`、`GitHub`、`Hacker News`、`YouTube`、`Bilibili`、`TikTok`、`X` 或 `Instagram`。缺失时保留原批量行为；指定时只运行该来源已有的采集器，返回相同的 `sections` / `health` / `warnings` 形状。TikTok、X、Instagram 不支持无链接的搜索，因此该参数只返回能力状态，不请求外部平台；单条公开 URL 仍用既有 `POST /api/social/resolve`。无效来源返回 400。来源与标签共同构成五分钟缓存键；`refresh=true` 仍强制刷新。前端进入页面和切换板块不调用采集，点击来源按钮或手动刷新才调用。
+`GET /api/harvest` 还可选传单个 `source`，取值为来源名 `Semantic Scholar`、`Crossref`、`arXiv`、`Google Scholar`、`GitHub`、`Hacker News`、`YouTube`、`Bilibili`、`TikTok`、`X` 或 `Instagram`。缺失时保留原批量行为；指定时只运行该来源已有的采集器，返回相同的 `sections` / `health` / `warnings` 形状。TikTok、X、Instagram 不支持无链接的搜索，因此该参数只返回能力状态，不请求外部平台；单条公开 URL 仍用既有 `POST /api/social/resolve`。无效来源返回 400。来源与标签共同构成五分钟缓存键；`refresh=true` 仍强制刷新。前端进入页面和切换板块不调用采集，点击来源按钮或手动刷新才调用。
 
 `PUT /api/harvest` 是同一采集资源的本机 YouTube 搜索配置操作，接收 JSON `{ "source": "YouTube", "apiKey": "..." }`。只接受本机同源请求与 20–256 个安全字符的 key；返回 `{ "configured": true }`，永不回传 key。传入空字符串 `apiKey: ""` 会清除本次进程的搜索 key 并返回 `{ "configured": false }`；若有环境变量 key，也会暂时禁用搜索，重启后恢复环境变量配置。网页以密码框提交，成功后清空输入并通过 `GET /api/harvest?source=YouTube&refresh=true` 搜索已选主题。key 仅留在本机服务进程内存，不写 localStorage、CLI 文件、磁盘或日志；重启即失效。环境变量 `YOUTUBE_API_KEY` 仍兼容；网页输入在本次进程中覆盖它。配置变更使旧的 YouTube 采集缓存失效。此 key 与 YouTube OAuth 账号连接无关。
 
-Google Scholar 复用 `GET /api/harvest?source=Google+Scholar&tag=...`，使用服务端 `SERPAPI_API_KEY` 调用 [SerpApi Google Scholar API](https://serpapi.com/google-scholar-api)。最多两个兴趣以 OR 合并为一次查询，最多返回 20 条，排除纯引用记录；批量采集仅在已配置且有兴趣时包含该来源。无 key 返回 `configuration_required`，无兴趣返回 `limited`，请求失败返回来源错误。结果来源为 `Google Scholar`，provenance 为 `public_api`，仅保留不含 key 的 SerpApi endpoint；只接收 HTTP(S) 论文链接，缺少完整日期时 `publishedAt` 为 null。
+免费学术检索支持 `GET /api/harvest?source=Semantic+Scholar&tag=...` 和 `source=Crossref`，无需 key。缺省批量采集在有兴趣时包含两者。Semantic Scholar 使用 bulk search，以 OR 合并最多两个兴趣并按发表时间排序；Crossref 使用包含这些兴趣的 bibliographic relevance query。各来源最多返回 20 条规范化记录，真实来源名与 `official_api` provenance 保留；DOI 统一后去重，只有完整合法日期才写入 `publishedAt`。无兴趣返回 `limited`；429 进入至少 60 秒且遵守 Retry-After 的冷却，失败状态可见。每个提供商至多一个在途请求，请求间隔至少一秒，沿用五分钟结果缓存。
+
+Google Scholar 复用 `GET /api/harvest?source=Google+Scholar&tag=...`，使用服务端 `SERPAPI_API_KEY` 调用 [SerpApi Google Scholar API](https://serpapi.com/google-scholar-api)。最多两个兴趣以 OR 合并为一次查询，最多返回 20 条，排除纯引用记录；仅显式指定该来源时调用，批量采集不消耗 SerpApi 配额。无 key 返回 `configuration_required`，无兴趣返回 `limited`，请求失败返回来源错误。结果来源为 `Google Scholar`，provenance 为 `public_api`，仅保留不含 key 的 SerpApi endpoint；只接收 HTTP(S) 论文链接，缺少完整日期时 `publishedAt` 为 null。
 
 `PUT /api/harvest` 同时接受 `{ "source": "Google Scholar", "apiKey": "..." }`，沿用本机同源、长度与字符校验、清空禁用、内存覆盖与不回传 key 的规则；非法 Scholar key 返回 `INVALID_SCHOLAR_KEY`。修改 Scholar key 使采集缓存失效。SerpApi 按其接口要求在服务端 HTTPS 请求参数中接收 key，响应中的搜索 URL、请求详情与原始错误不得进入前端响应或日志。
 

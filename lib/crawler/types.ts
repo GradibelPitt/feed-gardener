@@ -7,6 +7,8 @@ export type LiveSource =
   | 'Instagram'
   | 'X'
   | 'arXiv'
+  | 'Semantic Scholar'
+  | 'Crossref'
   | 'Google Scholar'
   | 'GitHub'
   | 'Hacker News';
@@ -18,6 +20,8 @@ export const LIVE_SOURCES: readonly LiveSource[] = [
   'Instagram',
   'X',
   'arXiv',
+  'Semantic Scholar',
+  'Crossref',
   'Google Scholar',
   'GitHub',
   'Hacker News',

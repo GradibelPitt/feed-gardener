@@ -8,7 +8,7 @@ Your interests and feedback belong to Feed Gardener. The app does not train or m
 
 ## What it does
 
-- **Discover across sources.** Fetch public candidates from arXiv, GitHub, Hacker News, Bilibili, configured YouTube search, and Google Scholar via SerpApi. Bilibili searches English and Chinese interest labels together and displays video cards.
+- **Discover across sources.** Fetch public candidates from Semantic Scholar, Crossref, arXiv, GitHub, Hacker News, Bilibili, and configured YouTube search. Academic search works without a paid key. Google Scholar via SerpApi remains available when explicitly selected. Bilibili searches English and Chinese interest labels together and displays video cards.
 - **Control relevance.** Choose a minimum Jev score from 1 to 10. Every displayed item must meet that score with at least 70% confidence, including Bilibili and YouTube. Pending or unavailable scores stay hidden; fewer matches never lower the threshold.
 - **Set hard boundaries.** Selected interests guide discovery; blocked topics and sources stay excluded.
 - **Understand each recommendation.** Every item can explain which interests, source, and freshness signals placed it in the feed.
@@ -157,9 +157,19 @@ pnpm test
 pnpm build
 ```
 
-### Google Scholar
+### Free academic search (recommended)
 
-Open **Discover → Sources → Research frontier → Google Scholar**. Enter a [SerpApi key](https://serpapi.com/manage-api-key), choose your interests, then click **Save & search** (or **Refresh** after changing interests). Searches use the [SerpApi Google Scholar API](https://serpapi.com/google-scholar-api) and your provider quota. Each search combines up to two selected interests and requests up to 20 papers. Results join **For you** after the existing interest and Jev relevance filters; saved results are classified as papers in Resources.
+Open **Discover → Sources → Research frontier → Semantic Scholar** or **Crossref**, choose interests, and fetch. Both work without an account or API key. Batch harvesting includes both free providers when interests are present and never calls SerpApi, even when a SerpApi key is configured.
+
+[Semantic Scholar](https://webflow.semanticscholar.org/product/api) uses its bulk paper search with up to two interests joined with OR, ordered by publication date. [Crossref](https://www.crossref.org/documentation/retrieve-metadata/rest-api/) uses a bibliographic relevance query containing those interests. Each source contributes at most 20 normalized records per refresh; this is a discovery sample, not exhaustive search. Results preserve their real provider name and official API provenance. DOI links are normalized for deduplication; saved results are papers in Resources. Existing interest filters and Jev title scoring still apply, so successful collection does not guarantee that every result appears in For you.
+
+Free search covers metadata, not guaranteed free full text or Google's exact index/ranking. Abstracts and publication dates can be missing. Year-only dates remain undated rather than inventing a month/day. Unauthenticated Semantic Scholar access uses shared capacity and may be throttled; Crossref provides an independent alternative. The app caches results for five minutes, permits one in-flight request per free provider, spaces requests by at least one second, and respects HTTP 429 Retry-After with at least a one-minute cooldown. Failures remain visible, with a previous snapshot retained when the scoped request fails. No paid provider is used as an automatic fallback.
+
+Social-platform options and current connectivity observations are documented in [the expansion assessment](docs/source_expansion.md).
+
+### Google Scholar (optional provider quota)
+
+For Google's index specifically, open **Discover → Sources → Research frontier → Google Scholar**. Enter a [SerpApi key](https://serpapi.com/manage-api-key), choose your interests, then click **Save & search** (or **Refresh** after changing interests). Searches use the [SerpApi Google Scholar API](https://serpapi.com/google-scholar-api) and your provider quota only when this source is explicitly requested. Each search combines up to two selected interests and requests up to 20 papers. Results join **For you** after the existing interest and Jev relevance filters; saved results are classified as papers in Resources. The source panel also links directly to free Semantic Scholar search.
 
 For persistent server configuration, set `SERPAPI_API_KEY` in your ignored `.env.local` (or `.env.production.local` when running the production server), then restart. Keys entered in the page stay in local server memory until restart and are sent only to SerpApi for searches. **Clear local key** disables Scholar search for the current process. Missing keys, missing interests, failed searches, and quota errors have separate states; no paper results are fabricated.
 

@@ -1,4 +1,5 @@
 import { fetchArxiv } from './arxiv.ts';
+import { academicPendingHealth, fetchFreeAcademic } from './academic.ts';
 import { fetchBilibiliSearchPage } from './bilibili.ts';
 import { fetchGithub } from './github.ts';
 import {
@@ -113,7 +114,17 @@ export async function harvestPublicSources(
   const previous = snapshot?.payload ?? null;
   const results = await Promise.all([
     ...(!source || source === 'arXiv' ? [collect('arXiv', 'academic', () => fetchArxiv(14))] : []),
-    ...((!source || source === 'Google Scholar') && scholarConfigured() && terms.length
+    ...((!source || source === 'Semantic Scholar') && terms.length
+      ? [
+          collect('Semantic Scholar', 'academic', () =>
+            fetchFreeAcademic('Semantic Scholar', terms),
+          ),
+        ]
+      : []),
+    ...((!source || source === 'Crossref') && terms.length
+      ? [collect('Crossref', 'academic', () => fetchFreeAcademic('Crossref', terms))]
+      : []),
+    ...(source === 'Google Scholar' && scholarConfigured() && terms.length
       ? [collect('Google Scholar', 'academic', () => fetchGoogleScholar(terms))]
       : []),
     ...(!source || source === 'GitHub' ? [collect('GitHub', 'opensource', fetchGithub)] : []),
@@ -166,7 +177,13 @@ export async function harvestPublicSources(
     cache: 'fresh',
     sections: { social, academic, opensource },
     health: [
-      ...(!source || source === 'Google Scholar' ? scholarPendingHealth(terms.length > 0) : []),
+      ...(source === 'Google Scholar' ? scholarPendingHealth(terms.length > 0) : []),
+      ...((!source || source === 'Semantic Scholar') && !terms.length
+        ? [academicPendingHealth('Semantic Scholar')]
+        : []),
+      ...((!source || source === 'Crossref') && !terms.length
+        ? [academicPendingHealth('Crossref')]
+        : []),
       ...socialHealth().filter((item) => !source || item.source === source),
       ...((!source || source === 'Bilibili') && !terms.length
         ? [

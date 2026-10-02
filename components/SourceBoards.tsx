@@ -44,7 +44,7 @@ type Props = {
 const SOCIAL_STORAGE = 'feed-gardener-social-imports-v1';
 const sectionSources: Record<FeedSection, LiveSource[]> = {
   social: ['YouTube', 'Bilibili'],
-  academic: ['arXiv', 'Google Scholar'],
+  academic: ['Semantic Scholar', 'Crossref', 'arXiv', 'Google Scholar'],
   opensource: ['GitHub', 'Hacker News'],
 };
 const urlSources = new Set<LiveSource>(['TikTok', 'Instagram', 'X']);
@@ -55,6 +55,8 @@ const sourcePrompt: Record<LiveSource, string> = {
   YouTube: 'Select to fetch videos',
   Bilibili: 'Select to fetch videos',
   arXiv: 'Select to fetch papers',
+  'Semantic Scholar': 'Free paper search · no key needed',
+  Crossref: 'Free DOI search · no key needed',
   'Google Scholar': 'Select to fetch papers',
   GitHub: 'Select to fetch repositories',
   'Hacker News': 'Select to fetch stories',
@@ -97,6 +99,8 @@ const sourceMark: Record<LiveSource, string> = {
   Instagram: 'IG',
   X: 'X',
   arXiv: 'AX',
+  'Semantic Scholar': 'SS',
+  Crossref: 'CR',
   'Google Scholar': 'GS',
   GitHub: 'GH',
   'Hacker News': 'HN',
@@ -701,14 +705,51 @@ export default function SourceBoards({
             </div>
           )}
 
-        {selectedSource === 'Google Scholar' && !loadingSource && !hasSearchInterests && (
+        {selectedSource === 'Google Scholar' && (
           <div className="source-empty">
-            <p>{t('选择兴趣后搜索论文', 'Choose interests to search for papers')}</p>
-            <button type="button" onClick={onEditInterests}>
-              {t('选择兴趣', 'Choose interests')}
+            <p>
+              {t(
+                '免费替代：Semantic Scholar 和 Crossref，无需 SerpApi key。Google Scholar 仅在手动选择时使用付费提供商配额。',
+                'Free alternatives: Semantic Scholar and Crossref need no SerpApi key. Google Scholar only uses provider quota when selected explicitly.',
+              )}
+            </p>
+            <button
+              type="button"
+              disabled={loadingSource !== null || sourceKeyBusy}
+              onClick={() => selectSource('Semantic Scholar')}
+            >
+              {t('使用免费论文搜索', 'Use free paper search')}
             </button>
           </div>
         )}
+
+        {(selectedSource === 'Semantic Scholar' || selectedSource === 'Crossref') && (
+          <div className="source-empty">
+            <p>
+              {t(
+                '免费检索论文元数据，无需账号或 API key；全文能否免费阅读由原出版方决定。',
+                'Search paper metadata for free without an account or API key. Full-text access depends on the publisher.',
+              )}
+            </p>
+            {selectedHealth?.state === 'error' && (
+              <p role="alert">
+                {payload?.warnings.find((warning) => warning.startsWith(`${selectedSource}:`))}
+              </p>
+            )}
+          </div>
+        )}
+
+        {selectedSource &&
+          ['Google Scholar', 'Semantic Scholar', 'Crossref'].includes(selectedSource) &&
+          !loadingSource &&
+          !hasSearchInterests && (
+            <div className="source-empty">
+              <p>{t('选择兴趣后搜索论文', 'Choose interests to search for papers')}</p>
+              <button type="button" onClick={onEditInterests}>
+                {t('选择兴趣', 'Choose interests')}
+              </button>
+            </div>
+          )}
 
         <div className="source-board-toolbar">
           <span>{t('内容统一显示在「For you」', 'Browse results in For you')}</span>
