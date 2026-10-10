@@ -66,7 +66,7 @@ pnpm cli -- help
 
 The app is a local prototype. Public-source availability and result counts depend on the upstream services and configured keys. Recommendation quality has not been validated in a real-user study. Feedback in Feed Gardener affects only its local experience; the app does not read platform cookies, autoplay content, or write likes and subscriptions.
 
-For implementation details, see the [API contract](docs/interface_contract.md) and [generated project structure](docs/project_structure.md). The [product goal and architecture notes](docs/feeder_product_goal.md) include historical design plans and may differ from current behavior.
+For implementation details, see the [API contract](docs/interface_contract.md) and [generated project structure](docs/project_structure.md).
 
 ## License
 
