@@ -1,4 +1,19 @@
-# Feed Gardener
+<div align="center">
+  <img src="app/icon.svg" alt="Feed Gardener icon" width="72" height="72">
+  <h1>Feed Gardener</h1>
+  <p>
+    <a href="#features">Features</a> |
+    <a href="#quick-start">Quick start</a> |
+    <a href="docs/interface_contract.md">Docs</a> |
+    <a href="LICENSE">License</a> |
+    <a href="#star-history">Star history</a>
+  </p>
+  <p>
+    <a href="https://github.com/GradibelPitt/feed-gardener-project-pack/stargazers"><img src="https://img.shields.io/github/stars/GradibelPitt/feed-gardener-project-pack?style=flat-square&amp;logo=github&amp;label=Stars" alt="GitHub stars"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2e5b42?style=flat-square" alt="MIT License"></a>
+    <a href="#quick-start"><img src="https://img.shields.io/badge/Node.js-22.13%2B-43853d?style=flat-square&amp;logo=node.js&amp;logoColor=white" alt="Node.js 22.13 or newer"></a>
+  </p>
+</div>
 
 **A local-first workspace for discovering, filtering, and saving public content around your interests.**
 
