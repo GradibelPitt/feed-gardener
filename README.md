@@ -70,7 +70,7 @@ For implementation details, see the [API contract](docs/interface_contract.md) a
 
 ## License
 
-No project-wide license is currently declared in this repository. The bundled DM Sans font has its own [SIL Open Font License 1.1](public/fonts/dmsans-OFL.txt).
+Feed Gardener is licensed under the [MIT License](LICENSE). Bundled third-party materials retain their own notices: [DM Sans (SIL Open Font License 1.1)](public/fonts/dmsans-OFL.txt) and the [TypeSafe AI skill (MIT)](.agents/skills/typesafe-ai/LICENSE).
 
 ## Star history
 
