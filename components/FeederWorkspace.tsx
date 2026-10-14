@@ -739,45 +739,6 @@ export default function FeederWorkspace({
               </p>
             )}
           </section>
-          <section className={styles.panel}>
-            <div className={styles.headingWithHelp}>
-              <h2>Feed boundaries</h2>
-              <HelpHint title="Feed boundaries">
-                Discover controls which selected topics must appear and whether other recognized
-                topics are allowed. Exclusions are hard filters. Saved, hidden, and open actions are
-                recorded locally for Feeder; an open click is not a verified watch, and none of
-                these actions writes feedback to a source platform.
-              </HelpHint>
-            </div>
-            <p>Manage matching rules in Discover.</p>
-            <p>
-              {preferences.blockedTags.length} excluded topics · {preferences.blockedSources.length}{' '}
-              excluded sources or creators
-            </p>
-            <p>
-              {events.length} local user actions recorded. Opening a link is not a verified watch.
-            </p>
-            {events.filter((event) => event.signal === 'hide' || event.signal === 'not_interested')
-              .length > 0 && (
-              <details className={styles.why}>
-                <summary>Hidden items · restore individually</summary>
-                <div className={styles.restoreList}>
-                  {events
-                    .filter((event) => event.signal === 'hide' || event.signal === 'not_interested')
-                    .slice(-20)
-                    .map((event) => (
-                      <button
-                        className={styles.secondary}
-                        key={event.id}
-                        onClick={() => onUndoEvent(event.id)}
-                      >
-                        <RotateCcw size={14} /> Restore {new URL(event.itemKey).hostname} item
-                      </button>
-                    ))}
-                </div>
-              </details>
-            )}
-          </section>
         </div>
       </div>
     );
@@ -1130,7 +1091,8 @@ export default function FeederWorkspace({
             )}
             {payload?.warnings.length ? (
               <div className={styles.warning}>
-                Some sources could not refresh; other sources are still shown.
+                {payload.health.find((health) => health.labelEn === 'Saved search results')
+                  ?.detailEn ?? 'Some sources could not refresh; other sources are still shown.'}
               </div>
             ) : null}
             {dismissed.length > 0 && (

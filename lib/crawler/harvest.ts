@@ -31,6 +31,7 @@ type SourceResult = {
   section: FeedSection;
   items: HarvestItem[];
   warning?: string;
+  cachedAt?: string;
   nextCursor?: string | null;
 };
 
@@ -55,6 +56,17 @@ async function collect(
 }
 
 function healthFor(result: SourceResult): SourceHealth {
+  if (result.cachedAt && result.items.length)
+    return {
+      source: result.source,
+      section: result.section,
+      state: 'limited',
+      label: '已保存的搜索结果',
+      labelEn: 'Saved search results',
+      detail: `实时刷新暂不可用，显示 ${result.cachedAt} 保存的真实结果。`,
+      detailEn: `Live refresh unavailable. Showing real results saved at ${result.cachedAt}.`,
+      itemCount: result.items.length,
+    };
   const live = result.items.length > 0;
   const failed = Boolean(result.warning);
   return {
@@ -174,7 +186,7 @@ export async function harvestPublicSources(
 
   const payload: HarvestPayload = {
     generatedAt: new Date().toISOString(),
-    cache: 'fresh',
+    cache: results.some((result) => result.cachedAt) ? 'stale_fallback' : 'fresh',
     sections: { social, academic, opensource },
     health: [
       ...(source === 'Google Scholar' ? scholarPendingHealth(terms.length > 0) : []),

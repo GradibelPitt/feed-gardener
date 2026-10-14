@@ -622,7 +622,7 @@ export default function SourceBoards({
 
         {keySource &&
           (selectedHealth?.state === 'configuration_required' ||
-            selectedHealth?.state === 'error') && (
+            (isScholar && selectedHealth?.state === 'error')) && (
             <div className="source-empty" aria-labelledby="source-key-prompt">
               <CircleAlert size={22} />
               <h3 id="source-key-prompt" role="status">

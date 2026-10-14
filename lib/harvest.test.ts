@@ -133,7 +133,7 @@ test('video pages append in order and duplicate video IDs do not reappear', () =
   assert.equal(merged.nextCursor, null);
 });
 
-test('entering a YouTube key enables search and invalidates the unconfigured snapshot', async () => {
+test('entering an optional YouTube key switches from public search and invalidates its snapshot', async () => {
   const originalFetch = globalThis.fetch;
   const originalEnvKey = process.env.YOUTUBE_API_KEY;
   const fakeKey = `AIza${'a'.repeat(35)}`;
@@ -144,20 +144,30 @@ test('entering a YouTube key enables search and invalidates the unconfigured sna
     const url = new URL(String(input));
     requests.push(url.pathname);
     assert.equal(url.searchParams.has('key'), false);
+    if (url.hostname === 'www.youtube.com') {
+      assert.equal(new Headers(init?.headers).has('x-goog-api-key'), false);
+      return Response.json({
+        contents: {
+          twoColumnSearchResultsRenderer: {
+            primaryContents: { sectionListRenderer: { contents: [] } },
+          },
+        },
+      });
+    }
     assert.equal(new Headers(init?.headers).get('x-goog-api-key'), fakeKey);
     return Response.json({ items: [] });
   };
   try {
     const before = await harvestPublicSources(true, ['Robotics'], 'YouTube');
-    assert.equal(before.health[0]?.state, 'configuration_required');
-    assert.equal(requests.length, 0);
+    assert.equal(before.health[0]?.state, 'limited');
+    assert.equal(requests.length, 1);
     const revision = youtubeSearchKeyRevision();
     setYouTubeSearchApiKey(fakeKey);
     assert.equal(youtubeSearchConfigured(), true);
     assert.equal(youtubeSearchKeyRevision(), revision + 1);
     const after = await harvestPublicSources(false, ['Robotics'], 'YouTube');
     assert.equal(after.cache, 'fresh');
-    assert.deepEqual(requests, ['/youtube/v3/search']);
+    assert.deepEqual(requests, ['/youtubei/v1/search', '/youtube/v3/search']);
     assert.equal(JSON.stringify(after).includes(fakeKey), false);
     globalThis.fetch = async () => {
       throw new Error(`Request failed at URL containing ${fakeKey}`);
@@ -173,7 +183,7 @@ test('entering a YouTube key enables search and invalidates the unconfigured sna
   }
 });
 
-test('clearing a session YouTube key disables search until restart even with an environment key', async () => {
+test('clearing a session YouTube key leaves keyless search available', async () => {
   const originalEnvKey = process.env.YOUTUBE_API_KEY;
   process.env.YOUTUBE_API_KEY = `AIza${'b'.repeat(35)}`;
   try {
@@ -181,10 +191,10 @@ test('clearing a session YouTube key disables search until restart even with an 
     assert.equal(youtubeSearchConfigured(), true);
     const previousRevision = youtubeSearchKeyRevision();
     setYouTubeSearchApiKey('');
-    assert.equal(youtubeSearchConfigured(), false);
+    assert.equal(youtubeSearchConfigured(), true);
     assert.equal(youtubeSearchKeyRevision(), previousRevision + 1);
     const payload = await harvestPublicSources(true, [], 'YouTube');
-    assert.equal(payload.health[0]?.state, 'configuration_required');
+    assert.equal(payload.health[0]?.state, 'limited');
   } finally {
     setYouTubeSearchApiKey(null);
     if (originalEnvKey === undefined) delete process.env.YOUTUBE_API_KEY;

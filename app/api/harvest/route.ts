@@ -24,7 +24,8 @@ export async function GET(request: Request) {
   const cursor = url.searchParams.get('cursor');
   if (
     cursor !== null &&
-    (cursor.length > 2048 || !['YouTube', 'Bilibili'].includes(requestedSource ?? ''))
+    (cursor.length > (requestedSource === 'YouTube' ? 24_000 : 2048) ||
+      !['YouTube', 'Bilibili'].includes(requestedSource ?? ''))
   )
     return apiError(400, 'INVALID_CURSOR', 'Video cursor requires a video source.');
   const payload = await harvestPublicSources(

@@ -1,6 +1,7 @@
 import { classifyDomain, cleanText, fetchWithTimeout, keywordTags } from './core.ts';
 import type { HarvestItem } from './types.ts';
 import { videoSearchTerms } from './video-search-terms.ts';
+import { fetchPublicYouTubeSearchPage } from './youtube-public.ts';
 
 type SearchEntry = {
   id?: { videoId?: string };
@@ -50,7 +51,7 @@ export function youtubeSearchKeyRevision(): number {
 }
 
 export function youtubeSearchConfigured(): boolean {
-  return Boolean(youtubeSearchApiKey());
+  return true;
 }
 
 export function youtubeEmbedUrl(value: string): string | null {
@@ -102,7 +103,7 @@ export async function fetchYouTubeSearchPage(
   cursor?: string,
 ): Promise<{ items: HarvestItem[]; nextCursor: string | null }> {
   const apiKey = youtubeSearchApiKey();
-  if (!apiKey) return { items: [], nextCursor: null };
+  if (!apiKey) return fetchPublicYouTubeSearchPage(tags, localizedTags, cursor);
   const terms = videoSearchTerms(tags, localizedTags);
   if (!terms.length) return { items: [], nextCursor: null };
   const state = readCursor(cursor, terms.length);
