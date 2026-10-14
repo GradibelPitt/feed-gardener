@@ -113,6 +113,12 @@ export default function FeederWorkspace({
   const [sourcesExpanded, setSourcesExpanded] = useState(false);
   const [interestsDetailsOpen, setInterestsDetailsOpen] = useState(false);
   const [relevanceDetailsOpen, setRelevanceDetailsOpen] = useState(false);
+  useEffect(() => {
+    if (guideStep === 4) {
+      setInterestsDetailsOpen(false);
+      setRelevanceDetailsOpen(true);
+    }
+  }, [guideStep]);
   const interestsDetailsId = useId();
   const relevanceDetailsId = useId();
   const [videoFetchStarted, setVideoFetchStarted] = useState(false);
@@ -854,7 +860,44 @@ export default function FeederWorkspace({
       <div className={showSources ? styles.discoverSplit : undefined}>
         <div className={showSources ? styles.discoverMain : undefined}>
           <div className={styles.discoverSettings} data-open={compactPanel === 'forYou'}>
-            <InterestIntro className={styles.interestsPanel}>
+            <div className={styles.mobileSettingsBar} role="group" aria-label="Feed settings">
+              <InterestIntroTarget
+                active={guideStep === 0}
+                step={1}
+                instruction="Tap Interests to open your interest settings."
+              >
+                <button
+                  type="button"
+                  aria-expanded={interestsDetailsOpen}
+                  aria-controls={interestsDetailsId}
+                  onClick={() => {
+                    if (!interestsDetailsOpen) onGuideAdvance(0);
+                    setInterestsDetailsOpen((open) => !open);
+                    setRelevanceDetailsOpen(false);
+                  }}
+                >
+                  <SlidersHorizontal size={16} aria-hidden="true" />
+                  <span>Interests</span>
+                  <ChevronDown size={14} aria-hidden="true" />
+                </button>
+              </InterestIntroTarget>
+              <button
+                type="button"
+                aria-expanded={relevanceDetailsOpen}
+                aria-controls={`${relevanceDetailsId}-panel`}
+                onClick={() => {
+                  setRelevanceDetailsOpen((open) => !open);
+                  setInterestsDetailsOpen(false);
+                }}
+              >
+                <span>Relevance</span>
+                <strong>{targetAverage}/10</strong>
+                <ChevronDown size={14} aria-hidden="true" />
+              </button>
+            </div>
+            <InterestIntro
+              className={`${styles.interestsPanel} ${!interestsDetailsOpen ? styles.mobilePanelClosed : ''}`}
+            >
               <div className={styles.interestsHeading}>
                 <div>
                   <span className={styles.eyebrow}>MY INTERESTS</span>
@@ -970,7 +1013,11 @@ export default function FeederWorkspace({
                 </p>
               </div>
             </InterestIntro>
-            <section className={styles.scorePanel} aria-label="Feed relevance">
+            <section
+              id={`${relevanceDetailsId}-panel`}
+              className={`${styles.scorePanel} ${!relevanceDetailsOpen ? styles.mobilePanelClosed : ''}`}
+              aria-label="Feed relevance"
+            >
               <div className={styles.scorePanelTop}>
                 <div>
                   <span className={styles.eyebrow}>YOUR FEED</span>

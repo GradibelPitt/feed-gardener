@@ -14,6 +14,10 @@
   margin-bottom: 25px;
 }
 
+.mobileSettingsBar {
+  display: none;
+}
+
 .interestsPanel {
   margin-bottom: 24px;
   padding: 20px;
@@ -1080,6 +1084,61 @@
 }
 
 @media (max-width: 760px), (max-width: 960px) and (hover: none) and (pointer: coarse) {
+  .header {
+    margin-bottom: 12px;
+  }
+  .mobileSettingsBar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .mobileSettingsBar > span {
+    flex: 1;
+    min-width: 0;
+  }
+  .mobileSettingsBar button {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid #cbd6cc;
+    border-radius: 10px;
+    background: #fffefa;
+    color: #243b31;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .mobileSettingsBar button[aria-expanded='true'] {
+    background: #e2edda;
+    border-color: #7c9b80;
+  }
+  .mobileSettingsBar button[aria-expanded='true'] > svg:last-child {
+    transform: rotate(180deg);
+  }
+  .mobileSettingsBar button:focus-visible {
+    outline: 2px solid #52745d;
+    outline-offset: 2px;
+  }
+  .mobilePanelClosed,
+  .interestsPanel .interestsHeading,
+  .scorePanel .scorePanelTop {
+    display: none;
+  }
+  .discoverSettings > .interestsPanel,
+  .discoverSettings > .scorePanel {
+    margin: 0 0 12px;
+  }
+  .manageInterestsRow,
+  .scoreSlider {
+    margin-top: 0;
+  }
   .undo {
     align-items: flex-start;
     flex-direction: column;
