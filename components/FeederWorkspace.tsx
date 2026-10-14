@@ -15,10 +15,13 @@ import {
   Bookmark,
   ChevronDown,
   Compass,
+  EllipsisVertical,
+  EyeOff,
   Layers3,
   RotateCcw,
   Search,
   SlidersHorizontal,
+  Trash2,
   X,
 } from 'lucide-react';
 import type { HarvestItem, HarvestPayload } from '@/lib/crawler/types';
@@ -1239,8 +1242,9 @@ export default function FeederWorkspace({
               {shown.map(({ candidate, rating }) => {
                 const { item } = candidate;
                 const saved = savedKeys.has(candidate.key);
+                const isVideo = item.source === 'YouTube' || item.source === 'Bilibili';
                 return (
-                  <article className={styles.card} key={candidate.key}>
+                  <article className={styles.card} key={candidate.key} data-video={isVideo}>
                     <div className={styles.cardMeta}>
                       <span>{item.source}</span>
                       <span>·</span>
@@ -1254,6 +1258,47 @@ export default function FeederWorkspace({
                         </>
                       )}
                     </div>
+                    {isVideo && (
+                      <details className={styles.mobileVideoMenu}>
+                        <summary aria-label={`More actions for ${item.title}`}>
+                          <EllipsisVertical size={19} aria-hidden="true" />
+                        </summary>
+                        <div role="group" aria-label={`Actions for ${item.title}`}>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              save(item);
+                              event.currentTarget.closest('details')?.removeAttribute('open');
+                            }}
+                            disabled={saved}
+                            aria-label={
+                              saved
+                                ? `Saved ${item.title} to library`
+                                : `Save ${item.title} to library`
+                            }
+                            title={saved ? 'Saved to library' : 'Save to library'}
+                          >
+                            <Bookmark size={19} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => record(item, 'hide')}
+                            aria-label={`Hide ${item.title}`}
+                            title="Hide"
+                          >
+                            <EyeOff size={19} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => record(item, 'not_interested')}
+                            aria-label={`Not interested in ${item.title}`}
+                            title="Not interested"
+                          >
+                            <Trash2 size={19} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </details>
+                    )}
                     {item.source === 'YouTube' ? (
                       <YouTubeVideo item={item} />
                     ) : item.source === 'Bilibili' ? (
