@@ -5,7 +5,12 @@ import { classifyDomain, keywordTags } from './crawler/core.ts';
 import { parseGithubTrendingRss } from './crawler/github.ts';
 import { detectSocialPlatform, SocialResolveError } from './crawler/social.ts';
 import { defaultPreferences, matchesHarvestPreferences } from './feed.ts';
-import { fetchYouTubeSearch, fetchYouTubeSearchPage, youtubeEmbedUrl } from './crawler/youtube.ts';
+import {
+  fetchYouTubeSearch,
+  fetchYouTubeSearchPage,
+  youtubeEmbedUrl,
+  setYouTubeSearchApiKey,
+} from './crawler/youtube.ts';
 import { videoSearchTerms } from './crawler/video-search-terms.ts';
 import {
   bilibiliEmbedUrl,
@@ -75,7 +80,7 @@ test('social adapter only accepts HTTPS URLs on known platform hosts', () => {
 test('YouTube search maps official title and thumbnail and ignores malformed video ids', async () => {
   const before = process.env.YOUTUBE_API_KEY;
   const fetchBefore = globalThis.fetch;
-  process.env.YOUTUBE_API_KEY = 'test-key';
+  setYouTubeSearchApiKey('test-key');
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
     assert.equal(url.hostname, 'www.googleapis.com');
@@ -113,6 +118,7 @@ test('YouTube search maps official title and thumbnail and ignores malformed vid
     assert.equal(youtubeEmbedUrl('https://youtube.com.evil.example/watch?v=abcdefghijk'), null);
   } finally {
     globalThis.fetch = fetchBefore;
+    setYouTubeSearchApiKey(null);
     if (before === undefined) delete process.env.YOUTUBE_API_KEY;
     else process.env.YOUTUBE_API_KEY = before;
   }
@@ -121,7 +127,7 @@ test('YouTube search maps official title and thumbnail and ignores malformed vid
 test('AI video search rotates through specific terms and keeps YouTube pagination', async () => {
   const before = process.env.YOUTUBE_API_KEY;
   const fetchBefore = globalThis.fetch;
-  process.env.YOUTUBE_API_KEY = 'test-key';
+  setYouTubeSearchApiKey('test-key');
   const queries: Array<[string | null, string | null]> = [];
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
@@ -150,6 +156,7 @@ test('AI video search rotates through specific terms and keeps YouTube paginatio
     ]);
   } finally {
     globalThis.fetch = fetchBefore;
+    setYouTubeSearchApiKey(null);
     if (before === undefined) delete process.env.YOUTUBE_API_KEY;
     else process.env.YOUTUBE_API_KEY = before;
   }

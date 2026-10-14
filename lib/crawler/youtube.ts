@@ -24,7 +24,12 @@ function searchRuntime(): YouTubeSearchRuntime {
 }
 
 function youtubeSearchApiKey(): string {
-  return searchRuntime().apiKey ?? process.env.YOUTUBE_API_KEY?.trim() ?? '';
+  return (
+    searchRuntime().apiKey ??
+    (process.env.YOUTUBE_SEARCH_PROVIDER === 'official'
+      ? (process.env.YOUTUBE_API_KEY?.trim() ?? '')
+      : '')
+  );
 }
 
 async function fetchYouTubeEndpoint(url: URL, apiKey: string): Promise<Response> {
