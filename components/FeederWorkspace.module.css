@@ -746,6 +746,10 @@
   justify-content: flex-start;
 }
 
+.mobileVideoMenu {
+  display: none;
+}
+
 .empty,
 .warning,
 .undo {
@@ -1084,6 +1088,58 @@
 }
 
 @media (max-width: 760px), (max-width: 960px) and (hover: none) and (pointer: coarse) {
+  .mobileVideoMenu {
+    position: absolute;
+    z-index: 2;
+    right: 8px;
+    bottom: 8px;
+    display: block;
+  }
+  .mobileVideoMenu summary,
+  .mobileVideoMenu button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid #cbd6cc;
+    border-radius: 10px;
+    background: #fff;
+    color: #243b31;
+    cursor: pointer;
+    list-style: none;
+  }
+  .mobileVideoMenu summary::-webkit-details-marker {
+    display: none;
+  }
+  .mobileVideoMenu[open] summary {
+    background: #e2edda;
+  }
+  .mobileVideoMenu > div {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 5px);
+    display: grid;
+    gap: 5px;
+    padding: 5px;
+    border: 1px solid #cbd6cc;
+    border-radius: 12px;
+    background: #fffefa;
+    box-shadow: 0 8px 20px #243b3124;
+  }
+  .mobileVideoMenu button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .mobileVideoMenu :is(summary, button):focus-visible {
+    outline: 2px solid #52745d;
+    outline-offset: 2px;
+  }
+  .card[data-video='true'] .actions > button,
+  .card[data-video='true'] .moreActions {
+    display: none;
+  }
   .header {
     margin-bottom: 12px;
   }
@@ -1235,9 +1291,76 @@
     min-width: 0;
     width: 0;
   }
-  .cards,
-  .videoCards[data-columns] {
+  .cards {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .videoCards[data-columns] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+  .card[data-video='true'] {
+    position: relative;
+    gap: 6px;
+    padding: 0 0 8px;
+    overflow: visible;
+  }
+  .card[data-video='true'] .cardMeta {
+    order: 3;
+    padding: 0 8px;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .card[data-video='true'] .cardMeta span:nth-child(2),
+  .card[data-video='true'] .cardMeta span:nth-child(n + 4),
+  .card[data-video='true'] .cardMeta time {
+    display: none;
+  }
+  .card[data-video='true'] :global(.youtube-video) {
+    order: 1;
+    margin: 0;
+    border-radius: 15px 15px 0 0;
+  }
+  .card[data-video='true'] h2 {
+    order: 2;
+    display: -webkit-box;
+    overflow: hidden;
+    padding: 0 8px;
+    font-size: 13px;
+    line-height: 1.35;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .card[data-video='true'] > p,
+  .card[data-video='true'] .chips {
+    display: none;
+  }
+  .card[data-video='true'] .ratingBadge {
+    order: 4;
+    margin: 0 8px;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  .card[data-video='true'] .ratingBadge strong {
+    font-size: 11px;
+  }
+  .card[data-video='true'] .ratingBadge progress {
+    display: none;
+  }
+  .card[data-video='true'] .why {
+    order: 5;
+    margin: auto 8px 0;
+    padding-top: 5px;
+    font-size: 11px;
+  }
+  .card[data-video='true'] .actions {
+    order: 6;
+    min-height: 44px;
+    margin: 0 60px 0 8px;
+  }
+  .card[data-video='true'] .actions a {
+    width: 44px;
+    padding: 0;
+    font-size: 0;
   }
   .card {
     min-width: 0;

@@ -231,12 +231,34 @@ test('populated video feed stays readable and saves from a phone', async ({
   if (isMobile) {
     const first = (await cards.nth(0).boundingBox())!;
     const second = (await cards.nth(1).boundingBox())!;
-    expect(first.width).toBeGreaterThan(page.viewportSize()!.width - 70);
-    expect(second.y).toBeGreaterThanOrEqual(first.y + first.height);
+    expect(first.width).toBeLessThan(page.viewportSize()!.width / 2);
+    expect(Math.abs(second.y - first.y)).toBeLessThan(2);
+    const actions = cards.first().getByRole('group', { name: /Actions for Robotics workshop 1/ });
+    await expect(actions).toBeHidden();
+    await expect(cards.first().getByText('More actions')).toBeHidden();
+    await cards.first().locator('summary[aria-label^="More actions for"]').click();
+    await expect(actions).toBeVisible();
   }
   await cards.first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('feed.png'), scale: 'css' });
-  await cards.first().getByRole('button', { name: /Save/ }).click();
+  await cards
+    .first()
+    .getByRole('button', { name: isMobile ? /Save Robotics workshop 1:/ : /Save/ })
+    .click();
+  if (isMobile) {
+    await cards.nth(1).locator('summary[aria-label^="More actions for"]').click();
+    await cards
+      .nth(1)
+      .getByRole('button', { name: /Hide Robotics workshop 2:/ })
+      .click();
+    await expect(cards).toHaveCount(5);
+    await cards.nth(1).locator('summary[aria-label^="More actions for"]').click();
+    await cards
+      .nth(1)
+      .getByRole('button', { name: /Not interested in Robotics workshop 3:/ })
+      .click();
+    await expect(cards).toHaveCount(4);
+  }
   await navigate(page, 'Saved', !!isMobile);
   await expect(
     page.getByRole('heading', { name: 'Robotics workshop 1: building a robot step by step' }),
