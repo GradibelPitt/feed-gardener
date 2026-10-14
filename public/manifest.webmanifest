@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "Feeder · Your interests, your feed",
+  "short_name": "Feeder",
+  "description": "Your interests, discoveries, and saved resources in one personal workspace.",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f5",
+  "theme_color": "#f7f8f5",
+  "icons": [
+    { "src": "/icons/feeder-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/feeder-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Discover", "url": "/#discover" },
+    { "name": "Saved for later", "url": "/#saved" }
+  ]
+}

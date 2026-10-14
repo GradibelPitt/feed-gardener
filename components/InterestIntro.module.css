@@ -101,7 +101,7 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px), (max-width: 960px) and (hover: none) and (pointer: coarse) {
   .arrow {
     right: calc(100% - 7px);
     top: -27px;
@@ -111,9 +111,19 @@
     position: fixed;
     top: auto;
     right: auto;
-    bottom: max(76px, calc(env(safe-area-inset-bottom) + 76px));
+    bottom: calc(var(--mobile-nav-height, 68px) + 68px);
     left: 16px;
     width: min(260px, calc(100vw - 32px));
+  }
+
+  :global(dialog) .instruction {
+    position: static;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  :global(dialog) .target[data-guide-active] {
+    flex-wrap: wrap;
   }
 }
 

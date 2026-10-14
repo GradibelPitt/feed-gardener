@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "pretest": "pnpm docs:structure",
     "test": "node --experimental-sqlite --experimental-strip-types --test lib/*.test.ts cli/*.test.ts",
+    "test:mobile": "playwright test",
     "format": "prettier --write app components lib cli next.config.ts",
     "format:check": "prettier --check app components lib cli next.config.ts"
   },
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
     "@openai/sites-vite-plugin": "0.2.0",
+    "@playwright/test": "^1.64.0",
     "@types/node": "24.10.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

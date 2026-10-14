@@ -407,6 +407,8 @@ export default function ResourceLibrary({
             <Link2 size={16} className="rlib-add-icon" aria-hidden />
             <input
               type="url"
+              aria-label={t('资源链接', 'Resource URL')}
+              enterKeyHint="done"
               value={url}
               required
               maxLength={2_048}
