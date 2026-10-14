@@ -90,7 +90,10 @@ test('interest sheet saves choices and releases background scroll', async ({
   isMobile,
 }, testInfo) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Expand', exact: true }).first().click();
+  await page
+    .getByRole('button', { name: isMobile ? 'Interests' : 'Expand', exact: true })
+    .first()
+    .click();
   await page.getByRole('button', { name: 'Manage interests' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -244,7 +247,7 @@ test('onboarding save remains visible with a short viewport', async ({ page, isM
   test.skip(!isMobile);
   await page.addInitScript(() => localStorage.setItem('feed-gardener:setup-guide:v2', '0'));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Expand', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Interests', exact: true }).click();
   await page.getByRole('button', { name: 'Manage interests', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByRole('button', { name: /AI infrastructure/ }).click();
