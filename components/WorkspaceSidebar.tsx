@@ -23,18 +23,10 @@ export const WORKSPACE_TABS = [
 type Props = {
   page: WorkspacePage;
   t: (zh: string, en: string) => string;
-  mobileOpen: boolean;
   onNavigate: (page: WorkspacePage) => void;
-  onCloseMobile: () => void;
 };
 
-export default function WorkspaceSidebar({
-  page,
-  t,
-  mobileOpen,
-  onNavigate,
-  onCloseMobile,
-}: Props) {
+export default function WorkspaceSidebar({ page, t, onNavigate }: Props) {
   const [libraryExpanded, setLibraryExpanded] = useState(page === 'saved');
 
   useEffect(() => {
@@ -54,17 +46,7 @@ export default function WorkspaceSidebar({
 
   return (
     <>
-      {mobileOpen && (
-        <button
-          className="nav-scrim"
-          aria-label={t('关闭导航', 'Close navigation')}
-          onClick={onCloseMobile}
-        />
-      )}
-      <aside
-        className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}
-        aria-label={t('工作台导航', 'Workspace navigation')}
-      >
+      <aside className="sidebar" aria-label={t('工作台导航', 'Workspace navigation')}>
         <button className="brand" onClick={() => navigate('discover')}>
           <span className="brand-mark">
             <Sprout size={27} strokeWidth={1.6} />

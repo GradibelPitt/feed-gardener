@@ -11,7 +11,6 @@ import {
   Cpu,
   Globe2,
   Layers3,
-  Menu,
   Plus,
   Radio,
   ShieldCheck,
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import ResourceLibrary from '@/components/ResourceLibrary';
 import WorkspaceSidebar, { type WorkspacePage } from '@/components/WorkspaceSidebar';
+import MobileNavigation from '@/components/MobileNavigation';
 import FeederWorkspace from '@/components/FeederWorkspace';
 import { InterestIntroTarget } from '@/components/InterestIntro';
 import YouTubeConnection from '@/components/YouTubeConnection';
@@ -39,6 +39,8 @@ import type { HarvestItem } from '@/lib/crawler/types';
 import { matchedHarvestTagIds, readFeederEvents, readTagJev, type FeederEvent } from '@/lib/feeder';
 
 type Page = WorkspacePage;
+const isWorkspacePage = (value: string): value is Page =>
+  ['discover', 'garden', 'library', 'saved', 'connections'].includes(value);
 const STORAGE = 'feed-gardener-demo-v1';
 const RESOURCES_STORAGE = 'feed-gardener-resources-v1';
 const COLLECTIONS_STORAGE = 'feed-gardener-collections-v1';
@@ -180,8 +182,13 @@ function Modal({
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     dialog?.showModal();
-    return () => dialog?.close();
+    return () => {
+      dialog?.close();
+      document.body.style.overflow = previousOverflow;
+    };
   }, []);
   return (
     <dialog
@@ -229,7 +236,7 @@ export default function Home() {
   const [ready, setReady] = useState(false);
   const [splitStorageReady, setSplitStorageReady] = useState(false);
   const [youtubeOutcome, setYoutubeOutcome] = useState('');
-  const [mobileNav, setMobileNav] = useState(false);
+  const scrollPositions = useRef<Partial<Record<Page, number>>>({});
   const [offline, setOffline] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
@@ -314,10 +321,13 @@ export default function Home() {
       setToast('Local data could not be loaded. Sample preferences are ready instead.');
     }
     const returnUrl = new URL(window.location.href);
+    const requestedPage = returnUrl.hash.slice(1);
+    if (isWorkspacePage(requestedPage)) setPage(requestedPage);
     if (returnUrl.searchParams.has('youtube')) {
       setYoutubeOutcome(returnUrl.searchParams.get('youtube') || '');
       setPage('connections');
       returnUrl.searchParams.delete('youtube');
+      returnUrl.hash = 'connections';
       window.history.replaceState(null, '', returnUrl.pathname + returnUrl.search + returnUrl.hash);
     }
     setReady(true);
@@ -330,6 +340,32 @@ export default function Home() {
       window.removeEventListener('offline', update);
     };
   }, []);
+  useEffect(() => {
+    if (!ready) return;
+    const url = new URL(window.location.href);
+    url.hash = page;
+    window.history.replaceState(window.history.state, '', url);
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    const frame = requestAnimationFrame(() =>
+      window.scrollTo({ top: scrollPositions.current[page] ?? 0, behavior: 'instant' }),
+    );
+    const onHistoryChange = () => {
+      const next = window.location.hash.slice(1);
+      if (isWorkspacePage(next)) {
+        scrollPositions.current[page] = window.scrollY;
+        setPage(next);
+      }
+    };
+    window.addEventListener('popstate', onHistoryChange);
+    window.addEventListener('hashchange', onHistoryChange);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.history.scrollRestoration = previousRestoration;
+      window.removeEventListener('popstate', onHistoryChange);
+      window.removeEventListener('hashchange', onHistoryChange);
+    };
+  }, [page, ready]);
   useEffect(() => {
     if (ready && splitStorageReady) {
       try {
@@ -422,8 +458,15 @@ export default function Home() {
     setToast(t('已收藏到资源库', 'Saved to the resource library'));
   };
   const navigate = (next: Page) => {
+    if (next === page) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+    scrollPositions.current[page] = window.scrollY;
+    const url = new URL(window.location.href);
+    url.hash = next;
+    window.history.pushState(window.history.state, '', url);
     setPage(next);
-    setMobileNav(false);
   };
   const editPreferences = () => {
     setCustomTagInput('');
@@ -482,21 +525,9 @@ export default function Home() {
 
   return (
     <div className="app-shell">
-      <WorkspaceSidebar
-        page={page}
-        t={t}
-        mobileOpen={mobileNav}
-        onNavigate={navigate}
-        onCloseMobile={() => setMobileNav(false)}
-      />
+      <WorkspaceSidebar page={page} t={t} onNavigate={navigate} />
+      <MobileNavigation page={page} onNavigate={navigate} />
       <div className="main-shell">
-        <button
-          className="mobile-menu icon-button"
-          onClick={() => setMobileNav(true)}
-          aria-label={t('打开导航', 'Open navigation')}
-        >
-          <Menu size={21} />
-        </button>
         {offline && (
           <div className="offline-banner">
             <Radio size={16} />
@@ -1028,7 +1059,7 @@ export default function Home() {
           <div className="guide-skip-confirm">
             <p>
               Are you sure you want to skip the instructions? You can open Instructions anytime from
-              the lower-left sidebar.
+              the navigation help link.
             </p>
             <div>
               <button className="secondary-button" onClick={() => setSkipGuideConfirm(false)}>
