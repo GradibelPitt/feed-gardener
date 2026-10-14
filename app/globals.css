@@ -4336,7 +4336,7 @@ h1 {
     right: 150px;
     top: 75px;
   }
-  .modal-footer > span {
+  .modal-footer > span:first-child {
     display: none;
   }
 }

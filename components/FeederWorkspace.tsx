@@ -574,10 +574,22 @@ export default function FeederWorkspace({
   ]);
   useEffect(() => {
     if (page !== 'discover' || !videoFetchStarted) return;
+    const mobile = window.matchMedia(
+      '(max-width: 760px), (max-width: 960px) and (hover: none) and (pointer: coarse)',
+    );
+    const onLayoutChange = () => {
+      if (mobile.matches) {
+        setIsCompact(false);
+        setCompactPanel(null);
+      }
+    };
+    onLayoutChange();
+    mobile.addEventListener('change', onLayoutChange);
     let previousY = window.scrollY;
     let downwardDistance = 0;
     let upwardDistance = 0;
     const onScroll = () => {
+      if (mobile.matches) return;
       const currentY = window.scrollY;
       const delta = currentY - previousY;
       previousY = currentY;
@@ -609,7 +621,10 @@ export default function FeederWorkspace({
       }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      mobile.removeEventListener('change', onLayoutChange);
+    };
   }, [page, videoFetchStarted, isCompact]);
   const dismissed = events
     .filter((event) => event.signal === 'hide' || event.signal === 'not_interested')
@@ -815,6 +830,7 @@ export default function FeederWorkspace({
               <Search size={15} aria-hidden="true" />
               <input
                 type="search"
+                enterKeyHint="search"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search public sources"
@@ -837,7 +853,7 @@ export default function FeederWorkspace({
               className={styles.secondary}
               disabled={loading || !searchInput.trim()}
             >
-              <Search size={15} /> Search
+              <Search size={15} aria-hidden="true" /> Search
             </button>
           </form>
           <InterestIntroTarget

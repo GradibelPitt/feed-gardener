@@ -73,8 +73,15 @@ export default function YouTubeConnection({
     return () => clearTimeout(timer);
   }, [connection?.expiresAt, refresh]);
   useEffect(() => {
-    if (open) dialog.current?.showModal();
-    else dialog.current?.close();
+    if (!open) return;
+    const element = dialog.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    element?.showModal();
+    return () => {
+      element?.close();
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open]);
 
   async function connect() {
