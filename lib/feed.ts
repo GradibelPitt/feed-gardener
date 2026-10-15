@@ -69,6 +69,7 @@ export type Preferences = {
   tagJev?: Record<string, number>;
   /** Minimum Jev title relevance per displayed item, from 1 to 10 (legacy storage key). */
   targetJevAverage?: number;
+  shortsNearbyTopics?: boolean;
   customTags: CustomTag[];
   relatedDomains: string[];
   exploration: number;
@@ -699,6 +700,7 @@ export const defaultPreferences: Preferences = {
   requireAllSelectedTags: false,
   excludeUnselectedTags: false,
   targetJevAverage: 8,
+  shortsNearbyTopics: true,
   behaviorWeights: { ...defaultBehaviorWeights },
   strategyMode: 'simple',
   readingLanguage: 'bilingual',

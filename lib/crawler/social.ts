@@ -1,3 +1,4 @@
+import { apiSetting } from '../api-settings.ts';
 import { classifyDomain, cleanText, fetchWithTimeout, keywordTags, stableId } from './core.ts';
 import type { HarvestItem, LiveSource, SourceHealth } from './types.ts';
 
@@ -109,8 +110,8 @@ export async function resolveSocialUrl(value: string): Promise<HarvestItem> {
     );
   }
 
-  const endpointValue = process.env.INSTAGRAM_OEMBED_ENDPOINT?.trim();
-  const token = process.env.INSTAGRAM_OEMBED_TOKEN?.trim();
+  const endpointValue = apiSetting('instagram', 'baseUrl')?.trim();
+  const token = apiSetting('instagram')?.trim();
   if (!endpointValue || !token) {
     throw new SocialResolveError(
       'Instagram 官方 oEmbed 服务端连接尚未配置；项目不会改用页面抓取或收集账号 Cookie。',
@@ -134,7 +135,7 @@ export async function resolveSocialUrl(value: string): Promise<HarvestItem> {
 
 export function socialHealth(): SourceHealth[] {
   const instagramReady = Boolean(
-    process.env.INSTAGRAM_OEMBED_ENDPOINT?.trim() && process.env.INSTAGRAM_OEMBED_TOKEN?.trim(),
+    apiSetting('instagram', 'baseUrl')?.trim() && apiSetting('instagram')?.trim(),
   );
   return [
     {

@@ -1,4 +1,5 @@
 import { fetchArxiv } from './arxiv.ts';
+import { apiConfigurationRevision } from '../api-settings.ts';
 import { academicPendingHealth, fetchFreeAcademic } from './academic.ts';
 import { fetchBilibiliSearchPage } from './bilibili.ts';
 import { fetchGithub } from './github.ts';
@@ -117,7 +118,7 @@ export async function harvestPublicSources(
     .map((tag) => tag.trim())
     .filter(Boolean)
     .slice(0, 2);
-  const cacheKey = `${source ?? 'all'}\u0001${terms.join('\u0000')}\u0001${localizedTags.join('\u0000')}\u0001${cursor ?? ''}\u0001${youtubeSearchKeyRevision()}\u0001${scholarKeyRevision()}`;
+  const cacheKey = `${source ?? 'all'}\u0001${terms.join('\u0000')}\u0001${localizedTags.join('\u0000')}\u0001${cursor ?? ''}\u0001${youtubeSearchKeyRevision()}\u0001${scholarKeyRevision()}\u0001${['youtube', 'scholar', 'github', 'instagram'].map(apiConfigurationRevision).join(':')}`;
   const snapshot = cached.get(cacheKey);
   if (!forceRefresh && snapshot && snapshot.expiresAt > now) {
     return { ...snapshot.payload, cache: 'hit' };

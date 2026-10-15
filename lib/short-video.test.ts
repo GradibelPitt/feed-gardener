@@ -114,6 +114,40 @@ test('Shorts relaxes only after strong picks run low, then automatically expands
   assert.equal(JSON.stringify(prefs), before);
 });
 
+for (const enabled of [false, true, undefined]) {
+  test(`Shorts nearby preference ${enabled}: controls suggestions and nearby video requests`, async () => {
+    const queries: string[] = [];
+    let suggestions = 0;
+    const mock: typeof fetch = async (url) => {
+      if (String(url).includes('decisions'))
+        return ok({ decision: { provider: 'jev', relevanceScore: 4, confidence: 0.95 } });
+      if (String(url).includes('suggest')) {
+        suggestions++;
+        return ok({ suggestions: [{ labelEn: 'Robot learning', label: '机器人学习' }] });
+      }
+      const topic = new URL(String(url), 'http://localhost').searchParams.get('tag')!;
+      queries.push(topic);
+      return payload(
+        topic === 'Agents' ? Array.from({ length: 9 }, (_, i) => item(i)) : [item(100)],
+      );
+    };
+    const session = new ShortVideoSession({ ...prefs, shortsNearbyTopics: enabled }, mock);
+    const signal = new AbortController().signal;
+    const results = [];
+    for (let i = 0; i < 5; i++) results.push(...(await session.next(signal)));
+    assert.equal(results.filter((entry) => entry.topic === 'Agents').length, 9);
+    if (enabled === false) {
+      assert.equal(suggestions, 0);
+      assert.deepEqual(queries, ['Agents']);
+      assert.ok(results.every((entry) => entry.reason !== 'nearby'));
+    } else {
+      assert.equal(suggestions, 1);
+      assert.deepEqual(queries, ['Agents', 'Robot learning']);
+      assert.equal(results.filter((entry) => entry.reason === 'nearby').length, 1);
+    }
+  });
+}
+
 test('unknown scores remain unrated; duplicate pages are bounded and source blocks still apply', async () => {
   let calls = 0;
   const mock: typeof fetch = async (url) => {
@@ -152,4 +186,33 @@ test('search or nearby failures preserve already buffered clips', async () => {
   assert.equal((await session.next(signal)).length, 4);
   assert.equal((await session.next(signal)).length, 3);
   assert.match(session.warning, /unavailable/);
+});
+
+test('explicit video search uses the query without expanding topics or changing saved interests', async () => {
+  const before = JSON.stringify(prefs);
+  const queries: string[] = [];
+  const goals: string[][] = [];
+  let suggestions = 0;
+  const mock: typeof fetch = async (url, init) => {
+    if (String(url).includes('decisions')) {
+      goals.push(JSON.parse(String(init?.body)).goalTags);
+      return ok({ decision: { provider: 'jev', relevanceScore: 4, confidence: 0.95 } });
+    }
+    if (String(url).includes('suggest')) {
+      suggestions++;
+      return ok({ suggestions: [] });
+    }
+    queries.push(new URL(String(url), 'http://localhost').searchParams.get('tag')!);
+    return payload([item(1)]);
+  };
+  const session = new ShortVideoSession(prefs, mock, ' Ocean life ');
+  const signal = new AbortController().signal;
+  const results = await session.next(signal);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].topic, 'Ocean life');
+  assert.deepEqual(await session.next(signal), []);
+  assert.deepEqual(queries, ['Ocean life']);
+  assert.deepEqual(goals, [['Ocean life']]);
+  assert.equal(suggestions, 0);
+  assert.equal(JSON.stringify(prefs), before);
 });

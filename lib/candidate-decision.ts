@@ -1,3 +1,4 @@
+import { apiConfigurationRevision, apiSetting } from './api-settings.ts';
 import { readScore, scoreCacheKey, writeScore, type CachedScore } from './score-cache.ts';
 
 export type CandidateDecisionAction = 'watch_candidate' | 'skip_candidate' | 'escalate_for_review';
@@ -158,14 +159,14 @@ export function parseJevCandidateDecision(
   return { ...decision, ...(typeof response.model === 'string' ? { model: response.model } : {}) };
 }
 
-export const isJevConfigured = () => Boolean(process.env.TYPESAFE_API_KEY);
+export const isJevConfigured = () => Boolean(apiSetting('typesafe'));
 
 const inFlightFeederScores = new Map<string, Promise<CachedScore>>();
 
 async function callJev(input: CandidateDecisionInput): Promise<CandidateDecision> {
-  const apiKey = process.env.TYPESAFE_API_KEY;
+  const apiKey = apiSetting('typesafe');
   if (!apiKey) throw new Error('JEV_MODEL_NOT_CONFIGURED');
-  const endpoint = process.env.TYPESAFE_API_BASE_URL || 'https://api.typesafe.ai/v1/systemone';
+  const endpoint = apiSetting('typesafe', 'baseUrl') || 'https://api.typesafe.ai/v1/systemone';
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
   try {
@@ -177,7 +178,7 @@ async function callJev(input: CandidateDecisionInput): Promise<CandidateDecision
           input.platform === 'feeder'
             ? { content_title: input.videoTitle, user_selected_tags: input.goalTags }
             : { video_title: input.videoTitle, user_selected_tags: input.goalTags },
-        model: process.env.TYPESAFE_MODEL || 'jev-latest',
+        model: apiSetting('typesafe', 'model') || 'jev-latest',
         questions: {
           target_relevance: {
             type: 'score',
@@ -213,7 +214,7 @@ async function scoreFeederTitle(input: CandidateDecisionInput): Promise<Candidat
   const key = scoreCacheKey(
     input.videoTitle,
     input.goalTags,
-    process.env.TYPESAFE_MODEL || 'jev-latest',
+    `${apiSetting('typesafe', 'model') || 'jev-latest'}:${apiConfigurationRevision('typesafe')}`,
   );
   try {
     const cached = readScore(key);

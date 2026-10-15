@@ -213,3 +213,101 @@ test('player error keeps next and original-video actions available', async ({ pa
   await page.getByRole('button', { name: 'Next video', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
 });
+
+test('mobile video fills the viewing area and swiping reveals working search', async ({
+  page,
+  isMobile,
+  browserName,
+}, info) => {
+  test.skip(!isMobile, 'Mobile immersive layout');
+  await page.goto('/#shorts');
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  await expect(page.locator('.mobile-app-header')).toBeHidden();
+  await expect(page.getByRole('search')).toHaveCount(0);
+  const viewport = (await page.locator('.shorts-viewport').boundingBox())!;
+  const frame = (await page.locator('.short-player-mount iframe').boundingBox())!;
+  const nav = (await page.locator('.mobile-tab-bar').boundingBox())!;
+  expect(viewport.y).toBe(0);
+  expect(frame).toEqual(viewport);
+  expect(viewport.height).toBeCloseTo(nav.y, 0);
+  for (const action of [
+    page.getByRole('button', { name: 'Pause clip', exact: true }),
+    page.getByRole('button', { name: 'Unmute clip' }),
+    page.locator('.short-card').first().getByRole('button', { name: 'Save video' }),
+    page.locator('.short-card').first().getByRole('link', { name: 'Full video' }),
+  ]) {
+    const box = (await action.boundingBox())!;
+    expect(box.x).toBeGreaterThan(viewport.width - 100);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThan(nav.y);
+    expect(box.width).toBeGreaterThanOrEqual(44);
+  }
+  await page.getByRole('button', { name: 'Toggle video playback' }).tap();
+  await expect(page.getByRole('button', { name: 'Play clip', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Toggle video playback' }).tap();
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  const savedPreferences = await page.evaluate(() => localStorage.getItem('feed-gardener-demo-v1'));
+  if (browserName === 'chromium') {
+    const cdp = await page.context().newCDPSession(page);
+    const x = viewport.width / 2;
+    const start = viewport.height * 0.8;
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x, y: start }],
+    });
+    for (let step = 1; step <= 8; step++) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x, y: start - viewport.height * 0.085 * step }],
+      });
+      await page.evaluate(
+        () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+      );
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  } else {
+    await page.locator('.shorts-viewport').evaluate((element) => {
+      element.scrollTop = element.clientHeight;
+    });
+  }
+  await expect(page.getByRole('search')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => (window as any).__players.some((p: any) => p.destroyed)))
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page
+        .locator('.shorts-viewport')
+        .evaluate((element) =>
+          Math.abs(
+            element.scrollTop / element.clientHeight -
+              Math.round(element.scrollTop / element.clientHeight),
+          ),
+        ),
+    )
+    .toBeLessThan(0.01);
+  const searchInput = page.getByRole('searchbox', { name: 'Search videos' });
+  await searchInput.fill('Ocean life');
+  const searchRequest = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return url.pathname === '/api/harvest' && url.searchParams.get('tag') === 'Ocean life';
+  });
+  await page.getByRole('button', { name: 'Submit video search' }).click();
+  await searchRequest;
+  await expect(page.locator('.short-card').first().locator('.short-card-topic')).toContainText(
+    'Ocean life',
+  );
+  expect(await page.evaluate(() => localStorage.getItem('feed-gardener-demo-v1'))).toBe(
+    savedPreferences,
+  );
+  expect((await page.locator('.shorts-viewport').boundingBox())!).toEqual(viewport);
+  await page.screenshot({ path: info.outputPath('shorts-search.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Close search and return to For you' }).click();
+  await expect(page.getByRole('search')).toHaveCount(0);
+  await expect(page.locator('.shorts-heading h1')).toContainText('For you');
+  await page
+    .locator('.mobile-tab-bar')
+    .getByRole('button', { name: 'Discover', exact: true })
+    .click();
+  await expect(page.locator('.mobile-app-header')).toBeVisible();
+});

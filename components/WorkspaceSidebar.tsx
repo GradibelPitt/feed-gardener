@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAccount } from './AccountProvider';
 import {
   ArrowUpRight,
   Bookmark,
@@ -9,16 +10,20 @@ import {
   Clapperboard,
   Layers3,
   Leaf,
+  KeyRound,
+  UserRound,
+  Settings,
   Sprout,
 } from 'lucide-react';
 
-export type WorkspacePage = 'discover' | 'shorts' | 'garden' | 'library' | 'saved';
+export type WorkspacePage = 'discover' | 'shorts' | 'settings' | 'library' | 'saved' | 'api' | 'account';
 
 export const WORKSPACE_TABS = [
   { id: 'discover', icon: Compass, zh: '发现好内容', en: 'Discover' },
   { id: 'shorts', icon: Clapperboard, zh: '短视频', en: 'Shorts' },
-  { id: 'garden', icon: Sprout, zh: '我的信息花园', en: 'My garden' },
   { id: 'library', icon: Layers3, zh: '资源库', en: 'Resource library' },
+  { id: 'settings', icon: Settings, zh: '设置', en: 'Settings' },
+  { id: 'api', icon: KeyRound, zh: 'API', en: 'API' },
 ] as const;
 
 type Props = {
@@ -28,6 +33,7 @@ type Props = {
 };
 
 export default function WorkspaceSidebar({ page, t, onNavigate }: Props) {
+  const { account } = useAccount();
   const [libraryExpanded, setLibraryExpanded] = useState(page === 'saved');
 
   useEffect(() => {
@@ -69,7 +75,6 @@ export default function WorkspaceSidebar({ page, t, onNavigate }: Props) {
               >
                 <item.icon size={19} strokeWidth={1.7} />
                 <span>{t(item.zh, item.en)}</span>
-                {item.id === 'garden' && <i />}
               </button>
               {item.id === 'library' && libraryExpanded && (
                 <div className="sidebar-subnav">
@@ -96,6 +101,7 @@ export default function WorkspaceSidebar({ page, t, onNavigate }: Props) {
               {t('信息不必更多，只需更适合你。', 'A little less scrolling. A little more growing.')}
             </p>
           </div>
+          <button className={`nav-item ${page === 'account' ? 'active' : ''}`} aria-current={page === 'account' ? 'page' : undefined} onClick={() => navigate('account')}><UserRound size={18} /><span>{account ? account.name : t('账号 / 注册', 'Account / Sign in')}</span><ArrowUpRight size={14} className="push-right" /></button>
           <a className="nav-item" href="/instructions">
             <CircleHelp size={18} />
             {t('使用说明', 'Instructions')}

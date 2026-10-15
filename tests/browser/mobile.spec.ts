@@ -8,7 +8,6 @@ async function expectNoOverflow(page: Page) {
 
 async function navigate(page: Page, label: string, mobile: boolean) {
   const names: Record<string, string> = {
-    Garden: 'My garden',
     Library: 'Resource library',
     Saved: 'Saved for later',
   };
@@ -68,7 +67,7 @@ test('navigation, history, responsive shell, and touch targets', async ({
   }
   await page.screenshot({ path: testInfo.outputPath('discover.png'), fullPage: true });
   for (const [label, heading] of [
-    ['Garden', 'My garden'],
+    ['Settings', 'Settings'],
     ['Library', 'Resource library'],
     ['Saved', 'Saved for later'],
   ]) {
@@ -76,7 +75,7 @@ test('navigation, history, responsive shell, and touch targets', async ({
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     await expectNoOverflow(page);
   }
-  await expect(page.getByRole('button', { name: 'Settings' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'My garden' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Connections & privacy' })).toHaveCount(0);
   await page.goBack();
   await expect(page.getByRole('heading', { name: 'Resource library' })).toBeVisible();
@@ -365,8 +364,8 @@ test('switching pages restores library scroll and help returns to the current pa
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const savedY = await page.evaluate(() => window.scrollY);
   expect(savedY).toBeGreaterThan(0);
-  await navigate(page, 'Garden', true);
-  await expect(page.getByRole('heading', { name: 'My garden' })).toBeVisible();
+  await navigate(page, 'Settings', true);
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await navigate(page, 'Library', true);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(savedY, 0);
   await page.locator('.mobile-app-header').getByRole('link', { name: 'Instructions' }).click();

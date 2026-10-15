@@ -1,3 +1,5 @@
+import { apiContext } from './account-context.ts';
+import { runtimeEnv } from './runtime-env.ts';
 // Server-only domain logic: node:crypto prevents use in the browser bundle.
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { API_INTERFACES, type YouTubeConnection } from './api-contract.ts';
@@ -24,7 +26,7 @@ type Store = { pending: Map<string, Pending>; sessions: Map<string, Session> };
 type Config = { clientId: string; clientSecret: string; redirectUri: string; missing: string[] };
 export const newYouTubeStore = (): Store => ({ pending: new Map(), sessions: new Map() });
 
-export function youtubeConfig(env: Record<string, string | undefined> = process.env): Config {
+export function youtubeConfig(env: Record<string, string | undefined> = runtimeEnv()): Config {
   const clientId = env.GOOGLE_CLIENT_ID?.trim() || '';
   const clientSecret = env.GOOGLE_CLIENT_SECRET?.trim() || '';
   const redirectUri =
@@ -335,16 +337,55 @@ export function createYouTubeConnectionService(
   };
 }
 
-// Single local Node process; shared across Route modules and development reloads.
-const shared = globalThis as typeof globalThis & {
-  __fgYouTubeStore?: Store;
-  __fgYouTubeCleanup?: ReturnType<typeof setInterval>;
-};
-shared.__fgYouTubeStore ??= newYouTubeStore();
-shared.__fgYouTubeCleanup ??= setInterval(() => {
-  for (const entries of [shared.__fgYouTubeStore!.pending, shared.__fgYouTubeStore!.sessions]) {
-    for (const [id, entry] of entries) if (entry.expires <= Date.now()) entries.delete(id);
-  }
-}, 30000).unref();
-export const youtubeConnectionService = () =>
-  createYouTubeConnectionService(shared.__fgYouTubeStore!, youtubeConfig());
+export function youtubeConnectionService() {
+  const context = apiContext.getStore();
+  const raw = context?.store['internal:youtube-oauth']?.values;
+  const store: Store = raw
+    ? {
+        pending: new Map(JSON.parse(raw.pending || '[]')),
+        sessions: new Map(JSON.parse(raw.sessions || '[]')),
+      }
+    : newYouTubeStore();
+  const service = createYouTubeConnectionService(store, youtubeConfig());
+  const persist = () => {
+    if (!context?.account) return;
+    context.store['internal:youtube-oauth'] = {
+      name: 'YouTube connection',
+      values: {
+        pending: JSON.stringify([...store.pending]),
+        sessions: JSON.stringify([...store.sessions]),
+      },
+    };
+    context.dirty = true;
+  };
+  return {
+    start(...args: Parameters<typeof service.start>) {
+      try {
+        return service.start(...args);
+      } finally {
+        persist();
+      }
+    },
+    async complete(...args: Parameters<typeof service.complete>) {
+      try {
+        return await service.complete(...args);
+      } finally {
+        persist();
+      }
+    },
+    async status(...args: Parameters<typeof service.status>) {
+      try {
+        return await service.status(...args);
+      } finally {
+        persist();
+      }
+    },
+    async disconnect(...args: Parameters<typeof service.disconnect>) {
+      try {
+        return await service.disconnect(...args);
+      } finally {
+        persist();
+      }
+    },
+  };
+}

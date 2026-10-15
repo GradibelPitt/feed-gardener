@@ -1,3 +1,4 @@
+import { withAccountContext } from '@/lib/account-context';
 import 'server-only';
 import { cookies } from 'next/headers';
 import { apiError, apiSuccess } from '@/lib/api-contract';
@@ -21,7 +22,7 @@ function failure(error: unknown) {
   Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
   return response;
 }
-export async function GET() {
+async function handleGET() {
   try {
     const jar = await cookies();
     const data = await youtubeConnectionService().status(jar.get(YOUTUBE_SESSION_COOKIE)?.value);
@@ -30,7 +31,7 @@ export async function GET() {
     return failure(error);
   }
 }
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     assertYouTubeOrigin(request);
     const body = await request.json().catch(() => null);
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
     return failure(error);
   }
 }
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   try {
     assertYouTubeOrigin(request);
     const jar = await cookies();
@@ -70,3 +71,9 @@ export async function DELETE(request: Request) {
     return failure(error);
   }
 }
+
+export async function GET(request: Request) { return withAccountContext(handleGET, false)(request); }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, true)(request); }
+
+export async function DELETE(request: Request) { return withAccountContext(handleDELETE, true)(request); }

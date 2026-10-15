@@ -1,3 +1,4 @@
+import { apiContext, withAccountContext } from '@/lib/account-context';
 import { apiError, apiSuccess } from '@/lib/api-contract';
 import {
   fetchGithubTagSuggestions,
@@ -25,7 +26,7 @@ const cleanStrings = (value: unknown, limit: number) =>
       ].slice(0, limit)
     : [];
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
   if (liveStatus === 'live') {
     try {
       const cacheKey = JSON.stringify({
+        account: apiContext.getStore()?.account?.id,
         tagIds,
         domainIds,
         searchTerms,
@@ -100,3 +102,5 @@ export async function POST(request: Request) {
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, false)(request); }

@@ -2,6 +2,10 @@ export const API_CONTRACT_VERSION = 'feed-gardener-api/2' as const;
 export const AGENT_CONTRACT_VERSION = 'feed-gardener-agent/1' as const;
 
 export const API_INTERFACES = {
+  account: { method: 'GET', path: '/api/account' },
+  accountAction: { method: 'POST', path: '/api/account' },
+  accountData: { method: 'GET', path: '/api/account/data' },
+  saveAccountData: { method: 'PUT', path: '/api/account/data' },
   capabilities: { method: 'GET', path: '/api/agent/v1/capabilities' },
   createPlan: { method: 'POST', path: '/api/agent/v1/plans' },
   analyzeObservation: { method: 'POST', path: '/api/agent/v1/observations/analyze' },
@@ -15,6 +19,9 @@ export const API_INTERFACES = {
   connectYouTube: { method: 'POST', path: '/api/connections/youtube' },
   disconnectYouTube: { method: 'DELETE', path: '/api/connections/youtube' },
   youtubeCallback: { method: 'GET', path: '/api/connections/youtube/callback' },
+  apiConfigurations: { method: 'GET', path: '/api/settings/providers' },
+  saveApiConfiguration: { method: 'PUT', path: '/api/settings/providers' },
+  clearApiConfiguration: { method: 'DELETE', path: '/api/settings/providers' },
 } as const;
 
 export type YouTubeConnection = {

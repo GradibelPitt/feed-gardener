@@ -64,7 +64,16 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
           width: '100%',
           height: '100%',
           videoId: id,
-          playerVars: { playsinline: 1, controls: 1, rel: 0, origin: window.location.origin },
+          playerVars: {
+            playsinline: 1,
+            controls: window.matchMedia(
+              '(max-width: 760px), (max-width: 960px) and (hover: none) and (pointer: coarse)',
+            ).matches
+              ? 0
+              : 1,
+            rel: 0,
+            origin: window.location.origin,
+          },
           events: {
             onReady: ({ target }) => {
               if (disposed) return;
@@ -166,6 +175,17 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
     <div className="short-player" data-player-error={errorCode}>
       <div className="short-player-screen">
         <div className="short-player-mount" ref={mount} />
+        <button
+          className="short-player-touch"
+          aria-label="Toggle video playback"
+          aria-pressed={status === 'playing'}
+          onClick={togglePlayback}
+          disabled={!ready || status === 'error'}
+        >
+          {(status === 'paused' || status === 'ended') && (
+            <span>{status === 'ended' ? <RotateCcw size={34} /> : <Play size={36} />}</span>
+          )}
+        </button>
         {status === 'error' && (
           <div className="short-player-message" role="status">
             {message}

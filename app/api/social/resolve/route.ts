@@ -1,9 +1,10 @@
+import { withAccountContext } from '@/lib/account-context';
 import { apiError, apiSuccess } from '@/lib/api-contract';
 import { resolveSocialUrl, SocialResolveError } from '@/lib/crawler/social';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let body: unknown;
   try {
     body = await request.json();
@@ -35,3 +36,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, false)(request); }

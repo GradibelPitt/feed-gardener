@@ -40,14 +40,13 @@ import { resourceUrlKey, type ResourceRecord } from '@/lib/resources';
 import { appendHarvestPayload, mergeHarvestPayload } from '@/lib/crawler/merge';
 import { combineSearchPayloads, parseSearchTerms, searchMatchGroup } from '@/lib/discover-search';
 import { feedRatingContext, simulateFeed, type JevRating } from '@/lib/feed-simulator';
-import type { TagSuggestion } from '@/lib/tag-suggestions';
 import SourceBoards, { readSocialImports } from './SourceBoards';
 import YouTubeVideo from './YouTubeVideo';
 import BilibiliVideo from './BilibiliVideo';
 import InterestIntro, { InterestIntroTarget } from './InterestIntro';
 import styles from './FeederWorkspace.module.css';
 
-type WorkspacePage = 'discover' | 'garden';
+type WorkspacePage = 'discover';
 type VideoSource = 'YouTube' | 'Bilibili';
 type VideoPage = {
   source: VideoSource;
@@ -78,7 +77,6 @@ type Props = {
 const catalog = domains.flatMap((domain) =>
   domain.tags.map((tag) => ({ ...tag, domainId: domain.id })),
 );
-const broadGithubTopics = ['ai', 'c', 'java', 'javascript', 'python', 'rust', 'typescript'];
 const searchPrompts = [
   'What are we digging into today?',
   'Got a curiosity to chase?',
@@ -214,84 +212,10 @@ export default function FeederWorkspace({
   const [scoring, setScoring] = useState(false);
   const [scoringError, setScoringError] = useState('');
   const [scoringDone, setScoringDone] = useState(false);
-  const [nearbyTopics, setNearbyTopics] = useState<TagSuggestion[]>([]);
-  const [nearbyStatus, setNearbyStatus] = useState<
-    'idle' | 'loading' | 'live' | 'curated' | 'unavailable'
-  >('idle');
-  const [nearbyUpdatedAt, setNearbyUpdatedAt] = useState<string | null>(null);
-  const [nearbyRefresh, setNearbyRefresh] = useState(0);
   const ratingsRef = useRef(new Map<string, JevRating>());
   const ratedTitlesRef = useRef(new Map<string, string>());
   const ratingContextRef = useRef('');
   const interests = searchInterests(preferences);
-  const nearbyQuery = JSON.stringify({
-    domainIds: preferences.domains,
-    tagIds: preferences.tags,
-    customTerms: preferences.customTags.map((tag) => tag.labelEn),
-    excludeTerms: [
-      ...preferences.tags,
-      ...preferences.blockedTags,
-      ...catalog
-        .filter((tag) => preferences.blockedTags.includes(tag.id))
-        .flatMap((tag) => [tag.labelEn, tag.label]),
-      ...broadGithubTopics,
-    ],
-    readingLanguage: preferences.readingLanguage,
-    fresh: true,
-  });
-
-  useEffect(() => {
-    if (page !== 'garden') return;
-    const query = JSON.parse(nearbyQuery) as {
-      domainIds: string[];
-      tagIds: string[];
-      customTerms: string[];
-    };
-    if (!query.domainIds.length && !query.tagIds.length && !query.customTerms.length) {
-      setNearbyTopics([]);
-      setNearbyUpdatedAt(null);
-      setNearbyStatus('idle');
-      return;
-    }
-    const controller = new AbortController();
-    setNearbyTopics([]);
-    setNearbyUpdatedAt(null);
-    setNearbyStatus('loading');
-    async function loadNearbyTopics() {
-      try {
-        const response = await fetch('/api/tags/suggest', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: nearbyQuery,
-          cache: 'no-store',
-          signal: controller.signal,
-        });
-        const result = await readApiData<{
-          suggestions: TagSuggestion[];
-          liveStatus: 'live' | 'degraded' | 'idle';
-          retrievedAt: string | null;
-        }>(response);
-        if (controller.signal.aborted) return;
-        setNearbyTopics(result.suggestions);
-        setNearbyUpdatedAt(result.liveStatus === 'live' ? result.retrievedAt : null);
-        setNearbyStatus(
-          result.suggestions.length
-            ? result.suggestions.some((suggestion) => suggestion.origin === 'live')
-              ? 'live'
-              : 'curated'
-            : 'unavailable',
-        );
-      } catch {
-        if (controller.signal.aborted) return;
-        setNearbyTopics([]);
-        setNearbyUpdatedAt(null);
-        setNearbyStatus('unavailable');
-      }
-    }
-    void loadNearbyTopics();
-    return () => controller.abort();
-  }, [page, nearbyQuery, nearbyRefresh]);
-
   async function refresh(
     force = false,
     options: { search?: string | null; completeGuide?: boolean } = {},
@@ -862,60 +786,6 @@ export default function FeederWorkspace({
     if (savedKeys.has(resourceUrlKey(item.url))) return;
     onSaveResource(item);
     record(item, 'save');
-  }
-
-  if (page === 'garden') {
-    return (
-      <div className={styles.workspace}>
-        <header className={styles.header}>
-          <span className={styles.eyebrow}>YOUR INTERESTS</span>
-          <h1>My garden</h1>
-          <p>Choose your topics and adjust Relevance in Discover to shape your feed.</p>
-          <button className={styles.secondary} onClick={onEditInterests}>
-            <SlidersHorizontal size={16} /> Manage interests in Discover
-          </button>
-        </header>
-        <div className={styles.twoColumns}>
-          <section className={styles.panel}>
-            <div className={styles.headingWithHelp}>
-              <h2>Nearby topics</h2>
-              <HelpHint title="Nearby topics">
-                Generated from current public information related to your interests. Explicit topic
-                exclusions still apply to your feed.
-              </HelpHint>
-              <button
-                type="button"
-                className={styles.nearbyRefresh}
-                onClick={() => setNearbyRefresh((value) => value + 1)}
-                disabled={nearbyStatus === 'loading' || nearbyStatus === 'idle'}
-                aria-label="Refresh nearby topics"
-              >
-                <RotateCcw size={15} /> Refresh
-              </button>
-            </div>
-            <div className={styles.nearbyChips} aria-live="polite">
-              {nearbyTopics.map((topic) => (
-                <span key={topic.id}>{topic.displayLabel}</span>
-              ))}
-            </div>
-            {nearbyStatus === 'idle' && <p>Choose an interest to find nearby topics online.</p>}
-            {nearbyStatus === 'loading' && <p>Finding nearby topics…</p>}
-            {nearbyStatus === 'curated' && <p>Related topics from the built-in catalog.</p>}
-            {nearbyStatus === 'unavailable' && (
-              <p>Live nearby topics are unavailable. Try refreshing.</p>
-            )}
-            {nearbyStatus === 'live' && !nearbyTopics.length && (
-              <p>No nearby topics found in the current public results.</p>
-            )}
-            {nearbyUpdatedAt && nearbyTopics.length > 0 && (
-              <p className={styles.nearbyChecked}>
-                Updated {new Date(nearbyUpdatedAt).toLocaleString()}
-              </p>
-            )}
-          </section>
-        </div>
-      </div>
-    );
   }
 
   return (

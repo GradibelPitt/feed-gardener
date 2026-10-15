@@ -10,6 +10,8 @@ import {
   RefreshCw,
   SlidersHorizontal,
   Clapperboard,
+  Search,
+  X,
 } from 'lucide-react';
 import { searchInterests, type Preferences } from '@/lib/feed';
 import type { HarvestItem } from '@/lib/crawler/types';
@@ -26,9 +28,16 @@ type Props = {
 
 export default function ShortVideoFeed(props: Props) {
   const [revision, setRevision] = useState(0);
-  const key = JSON.stringify([props.preferences, revision]);
+  const [query, setQuery] = useState('');
+  const key = JSON.stringify([props.preferences, revision, query]);
   return (
-    <ShortVideoStream key={key} {...props} onRefresh={() => setRevision((value) => value + 1)} />
+    <ShortVideoStream
+      key={key}
+      {...props}
+      query={query}
+      onSearch={setQuery}
+      onRefresh={() => setRevision((value) => value + 1)}
+    />
   );
 }
 
@@ -38,12 +47,19 @@ function ShortVideoStream({
   onSave,
   savedUrls,
   onRefresh,
-}: Props & { onRefresh: () => void }) {
+  query,
+  onSearch,
+}: Props & { onRefresh: () => void; query: string; onSearch: (query: string) => void }) {
   const interests = searchInterests(preferences);
-  const enabled = interests.length > 0 && !preferences.blockedSources.includes('YouTube');
+  const enabled =
+    (interests.length > 0 || !!query) && !preferences.blockedSources.includes('YouTube');
   const session = useRef<ShortVideoSession | null>(null);
-  if (!session.current) session.current = new ShortVideoSession(preferences);
+  if (!session.current) session.current = new ShortVideoSession(preferences, fetch, query);
   const viewport = useRef<HTMLDivElement>(null);
+  const lastScroll = useRef(0);
+  const touchStart = useRef<number | null>(null);
+  const [searchVisible, setSearchVisible] = useState(!!query);
+  const [searchDraft, setSearchDraft] = useState(query);
   const controller = useRef<AbortController | null>(null);
   const busy = useRef(false);
   const [items, setItems] = useState<ShortVideo[]>([]);
@@ -116,15 +132,23 @@ function ShortVideoStream({
   };
 
   return (
-    <main className="shorts-page" data-page="shorts">
+    <main className="shorts-page" data-page="shorts" data-search-visible={searchVisible}>
       <header className="shorts-heading">
         <div>
           <span className="shorts-eyebrow">A LITTLE CURIOSITY</span>
           <h1>
-            Shorts<span>For you</span>
+            Shorts<span>{query ? 'Search' : 'For you'}</span>
           </h1>
         </div>
         <div className="shorts-heading-actions">
+          <button
+            onClick={() => setSearchVisible((visible) => !visible)}
+            aria-label={searchVisible ? 'Hide video search' : 'Search videos'}
+            aria-expanded={searchVisible}
+            aria-controls="shorts-search"
+          >
+            <Search size={19} />
+          </button>
           <button onClick={onEditInterests} aria-label="Edit Shorts interests">
             <SlidersHorizontal size={19} />
           </button>
@@ -133,6 +157,44 @@ function ShortVideoStream({
           </button>
         </div>
       </header>
+      {searchVisible && (
+        <form
+          id="shorts-search"
+          className="shorts-search"
+          role="search"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSearch(searchDraft.trim());
+            (event.currentTarget.elements.namedItem('query') as HTMLInputElement)?.blur();
+          }}
+        >
+          <Search size={18} aria-hidden="true" />
+          <input
+            name="query"
+            type="search"
+            enterKeyHint="search"
+            aria-label="Search videos"
+            placeholder="Search videos"
+            maxLength={80}
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+          />
+          <button type="submit" aria-label="Submit video search">
+            <ArrowUpRight size={20} />
+          </button>
+          <button
+            type="button"
+            aria-label="Close search and return to For you"
+            onClick={() => {
+              setSearchVisible(false);
+              setSearchDraft('');
+              onSearch('');
+            }}
+          >
+            <X size={18} />
+          </button>
+        </form>
+      )}
       {!enabled ? (
         <div className="shorts-empty">
           <Clapperboard size={38} />
@@ -151,6 +213,25 @@ function ShortVideoStream({
             ref={viewport}
             tabIndex={0}
             aria-label="Short video feed"
+            onScroll={(event) => {
+              const top = event.currentTarget.scrollTop;
+              if (top > lastScroll.current + 8) setSearchVisible(true);
+              lastScroll.current = top;
+            }}
+            onTouchStart={(event) => {
+              touchStart.current = event.touches[0]?.clientY ?? null;
+            }}
+            onTouchEnd={(event) => {
+              if (
+                touchStart.current !== null &&
+                touchStart.current - event.changedTouches[0].clientY > 40
+              )
+                setSearchVisible(true);
+              touchStart.current = null;
+            }}
+            onTouchCancel={() => {
+              touchStart.current = null;
+            }}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget) return;
               if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -171,7 +252,7 @@ function ShortVideoStream({
                   <div className="short-card-topic">
                     <span>
                       {entry.reason === 'nearby'
-                        ? 'Nearby topic'
+                        ? 'you may also interested in'
                         : entry.reason === 'broader'
                           ? 'Broader pick'
                           : entry.reason === 'unrated'
@@ -196,20 +277,20 @@ function ShortVideoStream({
                       <span> · YouTube</span>
                     </p>
                     <h2>{entry.item.title}</h2>
-                    <div className="short-card-actions">
-                      <button
-                        onClick={() => onSave(entry.item)}
-                        disabled={saved}
-                        aria-label={saved ? 'Video saved' : 'Save video'}
-                      >
-                        {saved ? <Check size={18} /> : <Bookmark size={18} />}
-                        {saved ? 'Saved' : 'Save'}
-                      </button>
-                      <a href={entry.item.url} target="_blank" rel="noreferrer">
-                        Full video <ArrowUpRight size={17} />
-                      </a>
-                      <span className="short-counter">{index + 1}</span>
-                    </div>
+                  </div>
+                  <div className="short-card-actions">
+                    <button
+                      onClick={() => onSave(entry.item)}
+                      disabled={saved}
+                      aria-label={saved ? 'Video saved' : 'Save video'}
+                    >
+                      {saved ? <Check size={18} /> : <Bookmark size={18} />}
+                      <span>{saved ? 'Saved' : 'Save'}</span>
+                    </button>
+                    <a href={entry.item.url} target="_blank" rel="noreferrer">
+                      <span>Full video</span> <ArrowUpRight size={17} />
+                    </a>
+                    <span className="short-counter">{index + 1}</span>
                   </div>
                 </article>
               );

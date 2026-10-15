@@ -1,3 +1,4 @@
+import { withAccountContext } from '@/lib/account-context';
 import {
   analyzeObservation,
   ObservationInputError,
@@ -7,7 +8,7 @@ import { apiError, apiSuccess } from '@/lib/api-contract';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const input = validateObservationInput(await request.json());
     const analysis = await analyzeObservation(input);
@@ -27,3 +28,5 @@ export async function POST(request: Request) {
     return apiError(502, 'OBSERVATION_ANALYSIS_FAILED', 'Observation analysis failed.', true);
   }
 }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, false)(request); }
