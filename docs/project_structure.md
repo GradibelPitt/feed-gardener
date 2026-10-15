@@ -137,6 +137,8 @@ feed-gardener-youtube/
     │   ├── candidate-decision.test.ts
     │   ├── candidate-decision.ts
     │   ├── crawler.test.ts
+    │   ├── discover-search.test.ts
+    │   ├── discover-search.ts
     │   ├── feed-observation.test.ts
     │   ├── feed-observation.ts
     │   ├── feed-simulator.test.ts
