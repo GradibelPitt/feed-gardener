@@ -2,3 +2,22 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+
+# Security fixes for dependencies pinned by the Sites build toolchain.
+overrides:
+  esbuild@<0.28.1: 0.28.2
+  image-size@<2.0.3: 2.0.3
+  sharp@<0.35.5: 0.35.5
+  source-map-js@<1.2.2: 1.2.2
+  undici@>=7.0.0 <7.29.1: 7.29.1
+  ws@>=8.0.0 <8.21.0: 8.21.0
+  # GHSA-vfj7-8cjw-p6xm has no braces fix; the patch uses tinyglobby instead.
+  vite-plugin-dynamic-import@1.6.0>fast-glob: '-'
+
+packageExtensions:
+  vite-plugin-dynamic-import@1.6.0:
+    dependencies:
+      tinyglobby: 0.2.17
+
+patchedDependencies:
+  vite-plugin-dynamic-import@1.6.0: patches/vite-plugin-dynamic-import@1.6.0.patch

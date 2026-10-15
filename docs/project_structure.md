@@ -215,6 +215,8 @@ feed-gardener-project-pack/
     │   ├── youtube-connection.ts
     │   ├── youtube-player.ts
     │   └── youtube-public.test.ts
+    ├── patches/
+    │   └── vite-plugin-dynamic-import@1.6.0.patch
     ├── public/
     │   ├── fonts/
     │   │   ├── dm-sans-0.ttf
@@ -238,7 +240,8 @@ feed-gardener-project-pack/
     │   │   ├── mobile.spec.ts
     │   │   ├── settings.spec.ts
     │   │   └── shorts.spec.ts
-    │   └── account-integration.mjs
+    │   ├── account-integration.mjs
+    │   └── dependency-security.test.mjs
     ├── .env.example
     ├── .gitattributes
     ├── .gitignore

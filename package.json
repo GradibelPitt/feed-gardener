@@ -16,7 +16,7 @@
     "pretypecheck": "pnpm docs:structure",
     "typecheck": "tsc --noEmit",
     "pretest": "pnpm docs:structure",
-    "test": "node --experimental-sqlite --experimental-strip-types --test lib/*.test.ts cli/*.test.ts",
+    "test": "node --experimental-sqlite --experimental-strip-types --test lib/*.test.ts cli/*.test.ts tests/dependency-security.test.mjs",
     "test:mobile": "playwright test",
     "format": "prettier --write app components lib cli next.config.ts",
     "format:check": "prettier --check app components lib cli next.config.ts",
@@ -26,7 +26,7 @@
     "cheerio": "1.2.0",
     "fast-xml-parser": "5.11.1",
     "lucide-react": "1.47.0",
-    "next": "16.3.5",
+    "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-server-dom-webpack": "19.3.0"
@@ -43,7 +43,7 @@
     "prettier": "3.9.8",
     "typescript": "5.9.3",
     "vinext": "1.0.0-beta.5",
-    "vite": "8.0.13",
+    "vite": "8.0.16",
     "wrangler": "4.92.0"
   },
   "packageManager": "pnpm@11.19.0",
