@@ -109,7 +109,18 @@ test('Settings migrates Garden, persists the Shorts switch, and controls nearby 
   await page.locator('.shorts-viewport').evaluate((element) => {
     element.scrollTop = element.clientHeight;
   });
-  await expect(page.getByText('you may also interested in', { exact: true })).toBeInViewport();
+  const nearbyLabel = page.getByText('you may also interested in', { exact: true });
+  await expect(
+    page.getByRole('article', { name: 'Robot learning video', exact: true }),
+  ).toBeInViewport();
+  const viewport = page.viewportSize()!;
+  if (isMobile && viewport.height <= 520 && viewport.width > viewport.height) {
+    // The compact landscape layout intentionally hides topic labels to leave room for the video.
+    await expect(nearbyLabel).toHaveCount(1);
+    await expect(nearbyLabel).toBeHidden();
+  } else {
+    await expect(nearbyLabel).toBeInViewport();
+  }
   await page.screenshot({ path: info.outputPath('nearby-label.png'), fullPage: true });
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
