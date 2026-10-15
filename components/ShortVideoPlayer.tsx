@@ -31,6 +31,7 @@ export default function ShortVideoPlayer({
   const playback = useRef({ active, muted });
   const initialized = useRef(false);
   const failed = useRef(false);
+  const mutedAutoplayAttempted = useRef(false);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
 
   useLayoutEffect(() => {
@@ -42,6 +43,7 @@ export default function ShortVideoPlayer({
   }, [active, muted]);
 
   useEffect(() => {
+    mutedAutoplayAttempted.current = false;
     const p = player.current;
     if (!p || !initialized.current || failed.current) return;
     if (!active || document.hidden) {
@@ -183,10 +185,19 @@ export default function ShortVideoPlayer({
               else if (data === 2 && !ended) setStatus('paused');
             },
             onAutoplayBlocked: () => {
-              if (!disposed && !failed.current) {
-                setAutoplayBlocked(true);
-                setStatus('paused');
+              if (disposed || failed.current || !playback.current.active || document.hidden) return;
+              const p = player.current;
+              if (p && !playback.current.muted && !mutedAutoplayAttempted.current) {
+                // Browsers may allow muted autoplay even when sound requires a user gesture.
+                mutedAutoplayAttempted.current = true;
+                playback.current.muted = true;
+                onMutedChange(true);
+                p.mute();
+                p.playVideo();
+                return;
               }
+              setAutoplayBlocked(true);
+              setStatus('paused');
             },
             onError: ({ data }) => {
               if (disposed) return;
@@ -218,7 +229,7 @@ export default function ShortVideoPlayer({
       initialized.current = false;
       failed.current = false;
     };
-  }, [item.url, item.durationSeconds]);
+  }, [item.url, item.durationSeconds, onMutedChange]);
 
   function togglePlayback() {
     const p = player.current;
@@ -297,6 +308,8 @@ export default function ShortVideoPlayer({
           onClick={() => {
             const p = player.current;
             if (!p) return;
+            mutedAutoplayAttempted.current = false;
+            playback.current.muted = !muted;
             if (muted) p.unMute();
             else p.mute();
             onMutedChange(!muted);

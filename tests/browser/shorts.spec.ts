@@ -25,6 +25,7 @@ test.beforeEach(async ({ page }) => {
         destroyed = false;
         loads: any[] = [];
         muted = true;
+        playAttempts = 0;
         videoId: string;
         events: any;
         frame: HTMLIFrameElement;
@@ -45,7 +46,8 @@ test.beforeEach(async ({ page }) => {
           this.playVideo();
         }
         playVideo() {
-          if (host.__blockSound && !this.muted) {
+          this.playAttempts++;
+          if (host.__blockAll || (host.__blockSound && !this.muted)) {
             this.state = 2;
             this.events.onAutoplayBlocked();
             return;
@@ -239,33 +241,62 @@ test('preloads two clips, preserves buffers and sound preference, and bounds pla
   ).toEqual({ count: 4, audible: 1, playing: 1 });
 });
 
-test('blocked sound autoplay offers an explicit play action without silently muting', async ({
+test('blocked sound falls back to autoplay, keeps buffers, and allows sound to be restored', async ({
   page,
 }) => {
   await page.addInitScript(() => {
     (window as any).__blockSound = true;
   });
   await page.goto('/#shorts');
-  await expect(page.getByRole('button', { name: 'Tap to play with sound' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Unmute clip', exact: true })).toBeVisible();
+  await expect(page.locator('.short-player-start')).toHaveCount(0);
+  await page.locator('.shorts-viewport').evaluate((element) => {
+    element.scrollTop = element.clientHeight;
+  });
+  await expect(page.locator('.short-card[data-index="1"]')).toHaveAttribute('data-active', 'true');
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(() => ({
+      loads: (window as any).__players[1].loads.length,
+      muted: (window as any).__players[1].muted,
+    })),
+  ).toEqual({ loads: 1, muted: true });
   await page.evaluate(() => {
     (window as any).__blockSound = false;
   });
-  await page.getByRole('button', { name: 'Tap to play with sound' }).click();
-  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
-  expect(await page.evaluate(() => (window as any).__players[0].muted)).toBe(false);
+  await page.getByRole('button', { name: 'Unmute clip', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Mute clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[1].muted)).toBe(false);
   await page.evaluate(() => {
     (window as any).__blockSound = true;
   });
   await page.locator('.shorts-viewport').evaluate((element) => {
-    element.scrollTop = element.clientHeight;
+    element.scrollTop = element.clientHeight * 2;
   });
-  await expect(page.getByRole('button', { name: 'Tap to play with sound' })).toBeVisible();
-  await page.evaluate(() => {
-    (window as any).__blockSound = false;
-  });
-  await page.getByRole('button', { name: 'Tap to play with sound' }).click();
+  await expect(page.locator('.short-card[data-index="2"]')).toHaveAttribute('data-active', 'true');
   await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
-  expect(await page.evaluate(() => (window as any).__players[1].loads.length)).toBe(1);
+  await expect(page.getByRole('button', { name: 'Unmute clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[2].loads.length)).toBe(1);
+});
+
+test('when all autoplay is blocked, retries once and keeps manual playback available', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    (window as any).__blockAll = true;
+  });
+  await page.goto('/#shorts');
+  await expect(page.getByRole('button', { name: 'Tap to play', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[0].playAttempts)).toBe(2);
+  await page.evaluate(() => {
+    (window as any).__blockAll = false;
+  });
+  await page.getByRole('button', { name: 'Tap to play', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Pause clip', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Play clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[0].state)).toBe(2);
 });
 
 test('a player that becomes ready after scrolling stays muted and paused offscreen', async ({
