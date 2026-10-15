@@ -1286,6 +1286,9 @@
     min-height: 48px;
     flex-wrap: wrap;
   }
+  .feedControls > .videoColumnsControl {
+    display: none;
+  }
   .feedControls input {
     flex: 1;
     min-width: 0;

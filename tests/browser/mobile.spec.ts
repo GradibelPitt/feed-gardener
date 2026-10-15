@@ -226,7 +226,12 @@ test('populated video feed stays readable and saves from a phone', async ({
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   const cards = page.locator('main article');
   await expect(cards).toHaveCount(6);
-  await page.getByLabel('Videos per row').selectOption('4');
+  if (isMobile) {
+    await expect(page.getByLabel('Videos per row')).toBeHidden();
+  } else {
+    await expect(page.getByLabel('Videos per row')).toBeVisible();
+    await page.getByLabel('Videos per row').selectOption('4');
+  }
   await expectNoOverflow(page);
   if (isMobile) {
     const first = (await cards.nth(0).boundingBox())!;
