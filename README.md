@@ -2,6 +2,7 @@
   <img src="app/icon.svg" alt="Feed Gardener icon" width="72" height="72">
   <h1>Feed Gardener</h1>
   <p>
+    <a href="https://feed-gardener.gradibel.chatgpt.site/#discover">Website</a> |
     <a href="#features">Features</a> |
     <a href="#quick-start">Quick start</a> |
     <a href="docs/interface_contract.md">Docs</a> |
