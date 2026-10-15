@@ -25,7 +25,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import type { HarvestItem, HarvestPayload } from '@/lib/crawler/types';
+import { LIVE_SOURCES, type HarvestItem, type HarvestPayload } from '@/lib/crawler/types';
 import type { Locale } from '@/lib/locale';
 import { readApiData } from '@/lib/api-contract';
 import { bilingualInterestLabel, domains, searchInterests, type Preferences } from '@/lib/feed';
@@ -151,7 +151,55 @@ export default function FeederWorkspace({
   const loadSentinelRef = useRef<HTMLDivElement>(null);
   const sentinelVisibleRef = useRef(false);
   const scrollIgnoreUntilRef = useRef(0);
-  const [query, setQuery] = useState('');
+  const [feedFilters, setFeedFilters] = useState({
+    type: 'all',
+    source: 'all',
+    date: 'all',
+    sort: 'default',
+  });
+  const filterDialogRef = useRef<HTMLDialogElement>(null);
+  const filterTitleId = useId();
+  const activeFilterCount = Object.entries(feedFilters).filter(
+    ([key, value]) => value !== (key === 'sort' ? 'default' : 'all'),
+  ).length;
+  const filterGroups = [
+    {
+      key: 'type',
+      label: 'Type',
+      options: [
+        ['all', 'All content'],
+        ['video', 'Videos'],
+        ['academic', 'Papers'],
+        ['opensource', 'Projects'],
+        ['discussion', 'Posts & discussions'],
+      ],
+    },
+    {
+      key: 'source',
+      label: 'Source',
+      options: [['all', 'All sources'], ...LIVE_SOURCES.map((source) => [source, source])],
+    },
+    {
+      key: 'date',
+      label: 'Upload date',
+      options: [
+        ['all', 'Any time'],
+        ['1', 'Last 24 hours'],
+        ['7', 'This week'],
+        ['30', 'This month'],
+        ['365', 'This year'],
+      ],
+    },
+    {
+      key: 'sort',
+      label: 'Sort by',
+      options: [
+        ['default', 'Recommended'],
+        ['relevance', 'Relevance'],
+        ['newest', 'Upload date'],
+      ],
+    },
+  ] as const;
   const [searchInput, setSearchInput] = useState('');
   const [searchPlaceholder, setSearchPlaceholder] = useState(searchPrompts[0]);
   const [searchTag, setSearchTag] = useState('');
@@ -332,7 +380,7 @@ export default function FeederWorkspace({
     setPayload(null);
     setLoaded(false);
     setDisplayCount(20);
-    setQuery('');
+    setFeedFilters({ type: 'all', source: 'all', date: 'all', sort: 'default' });
     ratingsRef.current.clear();
     ratedTitlesRef.current.clear();
     ratingContextRef.current = '';
@@ -578,12 +626,28 @@ export default function FeederWorkspace({
               ),
         )
       : results;
-    const needles = [
-      query.trim().toLowerCase(),
-      ...(dualSearchTerms.length ? [] : [searchTag.trim().toLowerCase()]),
-    ].filter(Boolean);
-    if (!needles.length) return items;
-    return items.filter(({ candidate }) => {
+    const needles = [...(dualSearchTerms.length ? [] : [searchTag.trim().toLowerCase()])].filter(
+      Boolean,
+    );
+    const filtered = items.filter(({ candidate }) => {
+      const item = candidate.item;
+      const isVideo = ['YouTube', 'Bilibili', 'TikTok'].includes(item.source);
+      if (feedFilters.type === 'video' && !isVideo) return false;
+      if (feedFilters.type === 'discussion' && (item.section !== 'social' || isVideo)) return false;
+      if (
+        ['academic', 'opensource'].includes(feedFilters.type) &&
+        item.section !== feedFilters.type
+      )
+        return false;
+      if (feedFilters.source !== 'all' && item.source !== feedFilters.source) return false;
+      if (feedFilters.date !== 'all') {
+        const published = Date.parse(item.publishedAt ?? '');
+        if (
+          !Number.isFinite(published) ||
+          published < Date.now() - Number(feedFilters.date) * 86400000
+        )
+          return false;
+      }
       const haystack = [
         candidate.item.title,
         candidate.item.summary,
@@ -595,10 +659,19 @@ export default function FeederWorkspace({
         .toLowerCase();
       return needles.every((needle) => haystack.includes(needle));
     });
+    if (feedFilters.sort !== 'default')
+      filtered.sort((a, b) => {
+        if (dualSearchTerms.length && a.group !== b.group) return (a.group ?? 3) - (b.group ?? 3);
+        return feedFilters.sort === 'newest'
+          ? (Date.parse(b.candidate.item.publishedAt ?? '') || 0) -
+              (Date.parse(a.candidate.item.publishedAt ?? '') || 0)
+          : (b.rating?.score ?? b.candidate.score) - (a.rating?.score ?? a.candidate.score);
+      });
+    return filtered;
   }, [
     candidates,
     simulation,
-    query,
+    feedFilters,
     searchTag,
     dualSearchTerms,
     videoFetchStarted,
@@ -847,8 +920,78 @@ export default function FeederWorkspace({
 
   return (
     <div
-      className={`${styles.workspace} ${showSources ? styles.workspaceExpanded : ''} ${videoFetchStarted ? styles.workspaceVideoActive : ''} ${isCompact ? styles.workspaceVideoMode : ''}`}
+      className={`${styles.workspace} ${styles.discoverWorkspace} ${showSources ? styles.workspaceExpanded : ''} ${videoFetchStarted ? styles.workspaceVideoActive : ''} ${isCompact ? styles.workspaceVideoMode : ''}`}
     >
+      <dialog
+        ref={filterDialogRef}
+        className={styles.filterDialog}
+        aria-labelledby={filterTitleId}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (
+              event.clientX < rect.left ||
+              event.clientX > rect.right ||
+              event.clientY < rect.top ||
+              event.clientY > rect.bottom
+            )
+              event.currentTarget.close();
+          }
+        }}
+      >
+        <div className={styles.filterDialogHeading}>
+          <h2 id={filterTitleId}>Search filters</h2>
+          <button
+            type="button"
+            aria-label="Close filters"
+            onClick={() => filterDialogRef.current?.close()}
+          >
+            <X size={22} />
+          </button>
+        </div>
+        <div className={styles.filterGroups}>
+          {filterGroups.map((group) => (
+            <fieldset key={group.key}>
+              <legend>{group.label}</legend>
+              {group.options.map(([value, label]) => (
+                <label key={value}>
+                  <input
+                    type="radio"
+                    name={`feed-filter-${group.key}`}
+                    value={value}
+                    checked={feedFilters[group.key] === value}
+                    onChange={() => {
+                      setFeedFilters((current) => ({ ...current, [group.key]: value }));
+                      setDisplayCount(20);
+                    }}
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </div>
+        <div className={styles.filterFooter}>
+          <button
+            type="button"
+            className={styles.secondary}
+            disabled={!activeFilterCount}
+            onClick={() => {
+              setFeedFilters({ type: 'all', source: 'all', date: 'all', sort: 'default' });
+              setDisplayCount(20);
+            }}
+          >
+            Reset filters
+          </button>
+          <button
+            type="button"
+            className={styles.secondary}
+            onClick={() => filterDialogRef.current?.close()}
+          >
+            Show results
+          </button>
+        </div>
+      </dialog>
       <header className={styles.header}>
         <span className={styles.eyebrow}>YOUR OWN DISCOVERY LAYER</span>
         <h1>Discover</h1>
@@ -917,6 +1060,19 @@ export default function FeederWorkspace({
             >
               <Search size={15} aria-hidden="true" /> Search
             </button>
+            <button
+              type="button"
+              className={`${styles.secondary} ${styles.filterButton}`}
+              aria-label="Filter this feed"
+              aria-haspopup="dialog"
+              onClick={() => filterDialogRef.current?.showModal()}
+            >
+              <SlidersHorizontal size={18} aria-hidden="true" />
+              <span className={styles.filterLabel}>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className={styles.filterCount}>{activeFilterCount}</span>
+              )}
+            </button>
           </form>
           <InterestIntroTarget
             active={guideStep === 5}
@@ -954,248 +1110,237 @@ export default function FeederWorkspace({
           </div>
         )}
       </header>
-      <div className={showSources ? styles.discoverSplit : undefined}>
-        <div className={showSources ? styles.discoverMain : undefined}>
-          <div className={styles.discoverSettings} data-open={compactPanel === 'forYou'}>
-            <div className={styles.mobileSettingsBar} role="group" aria-label="Feed settings">
-              <InterestIntroTarget
-                active={guideStep === 0}
-                step={1}
-                instruction="Tap Interests to open your interest settings."
-              >
-                <button
-                  type="button"
-                  aria-expanded={interestsDetailsOpen}
-                  aria-controls={interestsDetailsId}
-                  onClick={() => {
-                    if (!interestsDetailsOpen) onGuideAdvance(0);
-                    setInterestsDetailsOpen((open) => !open);
-                    setRelevanceDetailsOpen(false);
-                  }}
-                >
-                  <SlidersHorizontal size={16} aria-hidden="true" />
-                  <span>Interests</span>
-                  <ChevronDown size={14} aria-hidden="true" />
-                </button>
-              </InterestIntroTarget>
+      <div className={styles.discoverSettings} data-open={compactPanel === 'forYou'}>
+        <div className={styles.mobileSettingsBar} role="group" aria-label="Feed settings">
+          <InterestIntroTarget
+            active={guideStep === 0}
+            step={1}
+            instruction="Tap Interests to open your interest settings."
+          >
+            <button
+              type="button"
+              aria-expanded={interestsDetailsOpen}
+              aria-controls={interestsDetailsId}
+              onClick={() => {
+                if (!interestsDetailsOpen) onGuideAdvance(0);
+                setInterestsDetailsOpen((open) => !open);
+                setRelevanceDetailsOpen(false);
+              }}
+            >
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              <span>Interests</span>
+              <ChevronDown size={14} aria-hidden="true" />
+            </button>
+          </InterestIntroTarget>
+          <button
+            type="button"
+            aria-expanded={relevanceDetailsOpen}
+            aria-controls={`${relevanceDetailsId}-panel`}
+            onClick={() => {
+              setRelevanceDetailsOpen((open) => !open);
+              setInterestsDetailsOpen(false);
+            }}
+          >
+            <span>Relevance</span>
+            <strong>{targetAverage}/10</strong>
+            <ChevronDown size={14} aria-hidden="true" />
+          </button>
+        </div>
+        <InterestIntro
+          className={`${styles.interestsPanel} ${!interestsDetailsOpen ? styles.mobilePanelClosed : ''}`}
+        >
+          <div className={styles.interestsHeading}>
+            <div>
+              <span className={styles.eyebrow}>MY INTERESTS</span>
+              <h2>Your interests</h2>
+            </div>
+            <InterestIntroTarget
+              active={guideStep === 0}
+              step={1}
+              instruction="Click Expand to open your interest settings."
+            >
               <button
                 type="button"
-                aria-expanded={relevanceDetailsOpen}
-                aria-controls={`${relevanceDetailsId}-panel`}
+                className={styles.expandButton}
+                aria-expanded={interestsDetailsOpen}
+                aria-controls={interestsDetailsId}
                 onClick={() => {
-                  setRelevanceDetailsOpen((open) => !open);
-                  setInterestsDetailsOpen(false);
+                  if (!interestsDetailsOpen) onGuideAdvance(0);
+                  setInterestsDetailsOpen((open) => !open);
                 }}
               >
-                <span>Relevance</span>
-                <strong>{targetAverage}/10</strong>
-                <ChevronDown size={14} aria-hidden="true" />
+                <ChevronDown size={16} aria-hidden="true" />
+                {interestsDetailsOpen ? 'Collapse' : 'Expand'}
               </button>
-            </div>
-            <InterestIntro
-              className={`${styles.interestsPanel} ${!interestsDetailsOpen ? styles.mobilePanelClosed : ''}`}
-            >
-              <div className={styles.interestsHeading}>
-                <div>
-                  <span className={styles.eyebrow}>MY INTERESTS</span>
-                  <h2>Your interests</h2>
-                </div>
-                <InterestIntroTarget
-                  active={guideStep === 0}
-                  step={1}
-                  instruction="Click Expand to open your interest settings."
-                >
-                  <button
-                    type="button"
-                    className={styles.expandButton}
-                    aria-expanded={interestsDetailsOpen}
-                    aria-controls={interestsDetailsId}
-                    onClick={() => {
-                      if (!interestsDetailsOpen) onGuideAdvance(0);
-                      setInterestsDetailsOpen((open) => !open);
-                    }}
-                  >
-                    <ChevronDown size={16} aria-hidden="true" />
-                    {interestsDetailsOpen ? 'Collapse' : 'Expand'}
-                  </button>
-                </InterestIntroTarget>
-              </div>
-              <div
-                id={interestsDetailsId}
-                className={styles.cardDetails}
-                hidden={!interestsDetailsOpen}
-              >
-                <div className={styles.manageInterestsRow}>
-                  <InterestIntroTarget
-                    active={guideStep === 1}
-                    step={2}
-                    instruction="Click Manage interests to choose what you want to see."
-                  >
-                    <button
-                      className={styles.secondary}
-                      onClick={() => {
-                        onGuideAdvance(1);
-                        onEditInterests();
-                      }}
-                    >
-                      <SlidersHorizontal size={16} /> Manage interests
-                    </button>
-                  </InterestIntroTarget>
-                </div>
-                <div className={styles.domainList}>
-                  {domains
-                    .filter((domain) => preferences.domains.includes(domain.id))
-                    .map((domain, index) => (
-                      <span key={domain.id}>
-                        <i
-                          className={styles.domainDot}
-                          style={{
-                            backgroundColor: ['#a6b48a', '#dfbd91', '#aec0cb', '#aa9ab7'][
-                              index % 4
-                            ],
-                          }}
-                        />
-                        {domain.labelEn}
-                      </span>
-                    ))}
-                </div>
-                <div className={styles.chips}>
-                  {selectedTags.map((tag) => (
-                    <span key={tag.id}>{tag.labelEn}</span>
-                  ))}
-                  {preferences.customTags.map((tag) => (
-                    <span key={tag.id}>{tag.labelEn}</span>
-                  ))}
-                  {!selectedTags.length &&
-                    !preferences.customTags.length &&
-                    preferences.domains.length > 0 && (
-                      <span>Using selected areas until you add specific tags</span>
-                    )}
-                </div>
-                <fieldset className={styles.matchRules}>
-                  <legend>Content matching</legend>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={preferences.onlySelectedTags === true}
-                      onChange={(event) => onOnlySelectedTagsChange(event.target.checked)}
-                    />
-                    Include any selected topic
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={preferences.requireAllSelectedTags === true}
-                      onChange={(event) =>
-                        onInterestRuleChange('requireAllSelectedTags', event.target.checked)
-                      }
-                    />
-                    Include all selected topics
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={preferences.excludeUnselectedTags === true}
-                      onChange={(event) =>
-                        onInterestRuleChange('excludeUnselectedTags', event.target.checked)
-                      }
-                    />
-                    Exclude unselected topics
-                  </label>
-                </fieldset>
-                <p className={styles.matchHint}>
-                  Uses available topic tags. Explicit exclusions always apply.
-                  {loaded &&
-                    ` ${candidates.length} of ${publicCandidateCount} fetched items are in this prioritized scoring batch (maximum 300).`}
-                </p>
-              </div>
-            </InterestIntro>
-            <section
-              id={`${relevanceDetailsId}-panel`}
-              className={`${styles.scorePanel} ${!relevanceDetailsOpen ? styles.mobilePanelClosed : ''}`}
-              aria-label="Feed relevance"
-            >
-              <div className={styles.scorePanelTop}>
-                <div>
-                  <span className={styles.eyebrow}>YOUR FEED</span>
-                  <h2>Relevance</h2>
-                </div>
-                <button
-                  type="button"
-                  className={styles.expandButton}
-                  aria-expanded={relevanceDetailsOpen}
-                  aria-controls={relevanceDetailsId}
-                  onClick={() => setRelevanceDetailsOpen((open) => !open)}
-                >
-                  <ChevronDown size={16} aria-hidden="true" />
-                  {relevanceDetailsOpen ? 'Collapse' : 'Expand'}
-                </button>
-              </div>
-              <InterestIntroTarget
-                active={guideStep === 4}
-                step={5}
-                instruction="Move Relevance to choose how closely the feed should match your interests."
-                className={styles.guideSlider}
-              >
-                <label className={styles.scoreSlider}>
-                  <span>Relevance: {targetAverage} / 10</span>
-                  <input
-                    type="range"
-                    aria-label="Relevance"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={targetAverage}
-                    onChange={(event) => {
-                      onTargetJevAverageChange(Number(event.target.value));
-                      onGuideAdvance(4);
-                    }}
-                  />
-                  {relevanceDetailsOpen && (
-                    <span className={styles.rangeEndpoints}>
-                      <span>Lower · Broader</span>
-                      <span>Higher · More focused</span>
-                    </span>
-                  )}
-                </label>
-              </InterestIntroTarget>
-              <div
-                id={relevanceDetailsId}
-                className={styles.cardDetails}
-                hidden={!relevanceDetailsOpen}
-              >
-                {scoringState && <strong className={styles.scoreState}>{scoringState}</strong>}
-                <p>
-                  Only items with a confident Jev score at or above {targetAverage} are shown.
-                  Higher means fewer, closer matches.
-                </p>
-                <p>Actual average: {simulation.average?.toFixed(2) ?? '—'} / 10</p>
-                <div className={styles.scoreProgressText}>
-                  {simulation.ratedCount} of {candidates.length} candidates scored ({ratedPercent}%)
-                  · {simulation.items.length} shown
-                  {simulation.lowConfidenceCount > 0 &&
-                    ` · ${simulation.lowConfidenceCount} low confidence excluded`}
-                </div>
-                <progress
-                  className={styles.scoreProgress}
-                  max={Math.max(1, candidates.length)}
-                  value={simulation.ratedCount}
-                  aria-label="Jev scoring progress"
-                />
-              </div>
-            </section>
+            </InterestIntroTarget>
           </div>
+          <div
+            id={interestsDetailsId}
+            className={styles.cardDetails}
+            hidden={!interestsDetailsOpen}
+          >
+            <div className={styles.manageInterestsRow}>
+              <InterestIntroTarget
+                active={guideStep === 1}
+                step={2}
+                instruction="Click Manage interests to choose what you want to see."
+              >
+                <button
+                  className={styles.secondary}
+                  onClick={() => {
+                    onGuideAdvance(1);
+                    onEditInterests();
+                  }}
+                >
+                  <SlidersHorizontal size={16} /> Manage interests
+                </button>
+              </InterestIntroTarget>
+            </div>
+            <div className={styles.domainList}>
+              {domains
+                .filter((domain) => preferences.domains.includes(domain.id))
+                .map((domain, index) => (
+                  <span key={domain.id}>
+                    <i
+                      className={styles.domainDot}
+                      style={{
+                        backgroundColor: ['#a6b48a', '#dfbd91', '#aec0cb', '#aa9ab7'][index % 4],
+                      }}
+                    />
+                    {domain.labelEn}
+                  </span>
+                ))}
+            </div>
+            <div className={styles.chips}>
+              {selectedTags.map((tag) => (
+                <span key={tag.id}>{tag.labelEn}</span>
+              ))}
+              {preferences.customTags.map((tag) => (
+                <span key={tag.id}>{tag.labelEn}</span>
+              ))}
+              {!selectedTags.length &&
+                !preferences.customTags.length &&
+                preferences.domains.length > 0 && (
+                  <span>Using selected areas until you add specific tags</span>
+                )}
+            </div>
+            <fieldset className={styles.matchRules}>
+              <legend>Content matching</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={preferences.onlySelectedTags === true}
+                  onChange={(event) => onOnlySelectedTagsChange(event.target.checked)}
+                />
+                Include any selected topic
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={preferences.requireAllSelectedTags === true}
+                  onChange={(event) =>
+                    onInterestRuleChange('requireAllSelectedTags', event.target.checked)
+                  }
+                />
+                Include all selected topics
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={preferences.excludeUnselectedTags === true}
+                  onChange={(event) =>
+                    onInterestRuleChange('excludeUnselectedTags', event.target.checked)
+                  }
+                />
+                Exclude unselected topics
+              </label>
+            </fieldset>
+            <p className={styles.matchHint}>
+              Uses available topic tags. Explicit exclusions always apply.
+              {loaded &&
+                ` ${candidates.length} of ${publicCandidateCount} fetched items are in this prioritized scoring batch (maximum 300).`}
+            </p>
+          </div>
+        </InterestIntro>
+        <section
+          id={`${relevanceDetailsId}-panel`}
+          className={`${styles.scorePanel} ${!relevanceDetailsOpen ? styles.mobilePanelClosed : ''}`}
+          aria-label="Feed relevance"
+        >
+          <div className={styles.scorePanelTop}>
+            <div>
+              <span className={styles.eyebrow}>YOUR FEED</span>
+              <h2>Relevance</h2>
+            </div>
+            <button
+              type="button"
+              className={styles.expandButton}
+              aria-expanded={relevanceDetailsOpen}
+              aria-controls={relevanceDetailsId}
+              onClick={() => setRelevanceDetailsOpen((open) => !open)}
+            >
+              <ChevronDown size={16} aria-hidden="true" />
+              {relevanceDetailsOpen ? 'Collapse' : 'Expand'}
+            </button>
+          </div>
+          <InterestIntroTarget
+            active={guideStep === 4}
+            step={5}
+            instruction="Move Relevance to choose how closely the feed should match your interests."
+            className={styles.guideSlider}
+          >
+            <label className={styles.scoreSlider}>
+              <span>Relevance: {targetAverage} / 10</span>
+              <input
+                type="range"
+                aria-label="Relevance"
+                min="1"
+                max="10"
+                step="1"
+                value={targetAverage}
+                onChange={(event) => {
+                  onTargetJevAverageChange(Number(event.target.value));
+                  onGuideAdvance(4);
+                }}
+              />
+              {relevanceDetailsOpen && (
+                <span className={styles.rangeEndpoints}>
+                  <span>Lower · Broader</span>
+                  <span>Higher · More focused</span>
+                </span>
+              )}
+            </label>
+          </InterestIntroTarget>
+          <div
+            id={relevanceDetailsId}
+            className={styles.cardDetails}
+            hidden={!relevanceDetailsOpen}
+          >
+            {scoringState && <strong className={styles.scoreState}>{scoringState}</strong>}
+            <p>
+              Only items with a confident Jev score at or above {targetAverage} are shown. Higher
+              means fewer, closer matches.
+            </p>
+            <p>Actual average: {simulation.average?.toFixed(2) ?? '—'} / 10</p>
+            <div className={styles.scoreProgressText}>
+              {simulation.ratedCount} of {candidates.length} candidates scored ({ratedPercent}%) ·{' '}
+              {simulation.items.length} shown
+              {simulation.lowConfidenceCount > 0 &&
+                ` · ${simulation.lowConfidenceCount} low confidence excluded`}
+            </div>
+            <progress
+              className={styles.scoreProgress}
+              max={Math.max(1, candidates.length)}
+              value={simulation.ratedCount}
+              aria-label="Jev scoring progress"
+            />
+          </div>
+        </section>
+      </div>
+      <div className={showSources ? styles.discoverSplit : undefined}>
+        <div className={showSources ? styles.discoverMain : undefined}>
           <div className={styles.discoverResults}>
             <div className={styles.feedControls}>
-              <label>
-                <Compass size={17} />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Filter this feed"
-                  aria-label="Filter this feed"
-                />
-              </label>
               {shown.some(({ candidate }) =>
                 ['YouTube', 'Bilibili'].includes(candidate.item.source),
               ) && (
@@ -1274,9 +1419,11 @@ export default function FeederWorkspace({
             ) : null}
             {!loading && loaded && candidates.length > 0 && !scoring && visible.length === 0 ? (
               <div className={styles.empty}>
-                {dualSearchTerms.length
-                  ? `No public videos mention ${dualSearchTerms.join(' or ')}. Try other terms.`
-                  : 'No confident Jev scores meet your Relevance setting.'}
+                {activeFilterCount > 0
+                  ? 'No results match these filters. Try another option or reset your filters.'
+                  : dualSearchTerms.length
+                    ? `No public videos mention ${dualSearchTerms.join(' or ')}. Try other terms.`
+                    : 'No confident Jev scores meet your Relevance setting.'}
               </div>
             ) : null}
             {scoring && shown.length === 0 && (
