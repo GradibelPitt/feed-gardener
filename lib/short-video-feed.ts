@@ -3,7 +3,9 @@ import { domains, searchInterests, matchesHarvestPreferences, type Preferences }
 import type { HarvestItem, HarvestPayload } from './crawler/types.ts';
 import { matchesJevRelevance, type JevRating } from './feed-simulator.ts';
 import type { TagSuggestion } from './tag-suggestions.ts';
-import { videoId } from './short-video.ts';
+import { bilibiliVideoId, videoId } from './short-video.ts';
+
+export type ShortVideoSource = 'YouTube' | 'Bilibili';
 
 export type ShortVideo = {
   item: HarvestItem;
@@ -33,10 +35,17 @@ export class ShortVideoSession {
   warning = '';
   private goals: string[];
   private searching: boolean;
+  private source: ShortVideoSource;
 
-  constructor(preferences: Preferences, request: typeof fetch = fetch, query = '') {
+  constructor(
+    preferences: Preferences,
+    request: typeof fetch = fetch,
+    query = '',
+    source: ShortVideoSource = 'YouTube',
+  ) {
     this.preferences = preferences;
     this.request = request.bind(globalThis);
+    this.source = source;
     this.searching = !!query.trim();
     const interests = this.searching
       ? [{ labelEn: query.trim(), labelZh: query.trim() }]
@@ -99,17 +108,18 @@ export class ShortVideoSession {
   private async fill(lane: Lane, signal: AbortSignal): Promise<ShortVideo[]> {
     if (!lane.pending.length && lane.cursor !== null) {
       const query = new URLSearchParams({
-        source: 'YouTube',
+        source: this.source,
         tag: lane.topic.labelEn,
         refresh: 'true',
       });
+      if (this.source === 'Bilibili') query.set('tagZh', lane.topic.labelZh);
       if (lane.cursor) query.set('cursor', lane.cursor);
       const data = await this.json<HarvestPayload>(`/api/harvest?${query}`, signal);
-      const health = data.health.find((entry) => entry.source === 'YouTube');
+      const health = data.health.find((entry) => entry.source === this.source);
       if (health?.state === 'error' || health?.state === 'configuration_required')
         throw new Error('Video search is temporarily unavailable. Try again.');
       if (data.warnings.length) this.warning = data.warnings.join(' ');
-      const next = data.nextCursors?.YouTube ?? data.nextCursor ?? null;
+      const next = data.nextCursors?.[this.source] ?? data.nextCursor ?? null;
       lane.cursor = next === lane.cursor ? null : next;
       const relaxed = {
         ...this.preferences,
@@ -119,16 +129,25 @@ export class ShortVideoSession {
       };
       lane.pending.push(
         ...data.sections.social.filter((item) => {
-          const id = videoId(item.url);
+          const id = this.source === 'YouTube' ? videoId(item.url) : bilibiliVideoId(item.url);
           if (
-            item.source !== 'YouTube' ||
+            item.source !== this.source ||
             !id ||
             this.seen.has(id) ||
+            (this.preferences.shortsDurationFilterEnabled !== false &&
+              (!Number.isFinite(item.durationSeconds) ||
+                !item.durationSeconds ||
+                item.durationSeconds > (this.preferences.shortsMaxDurationSeconds ?? 120))) ||
             !matchesHarvestPreferences(item, relaxed)
           )
             return false;
           // Official search explicitly omits embeds for videos that cannot be embedded.
           if (item.provenance.mode === 'official_api' && !item.embedUrl) return false;
+          if (
+            this.source === 'Bilibili' &&
+            item.embedUrl !== `https://player.bilibili.com/player.html?bvid=${id}&autoplay=0`
+          )
+            return false;
           this.seen.add(id);
           return true;
         }),
@@ -196,7 +215,12 @@ export class ShortVideoSession {
     this.warning = '';
     // Probe a bounded number of pages; empty/duplicate upstream pages cannot cause a request loop.
     const probeSelected = this.broad.length < 8;
-    for (let attempt = 0; attempt < 2 && this.strong.length < 4 && probeSelected; attempt++) {
+    const maxAttempts = this.preferences.shortsDurationFilterEnabled === false ? 2 : 8;
+    for (
+      let attempt = 0;
+      attempt < maxAttempts && this.strong.length < 4 && probeSelected;
+      attempt++
+    ) {
       const lanes = this.selected.filter((lane) => lane.pending.length || lane.cursor !== null);
       if (!lanes.length) break;
       const lane = lanes[this.selectedIndex++ % lanes.length];
@@ -206,7 +230,7 @@ export class ShortVideoSession {
       } catch (error) {
         if (signal.aborted) throw error;
         this.warning = 'Some video searches failed. Continuing with available videos.';
-        continue;
+        break;
       }
       this.strong.push(...batch.filter((entry) => entry.reason === 'interest'));
       this.broad.push(...batch.filter((entry) => entry.reason !== 'interest'));

@@ -26,6 +26,49 @@ import type {
 
 const CACHE_TTL_MS = 5 * 60_000;
 const cached = new Map<string, { expiresAt: number; payload: HarvestPayload }>();
+const videoPool = new Map<string, { expiresAt: number; items: HarvestItem[] }>();
+let videoPoolRevision = 0;
+
+function topicKey(source: 'YouTube' | 'Bilibili', topic: string): string {
+  return `${source}\u0000${topic.trim().toLocaleLowerCase()}`;
+}
+
+function rememberVideos(
+  source: 'YouTube' | 'Bilibili',
+  topic: string,
+  items: HarvestItem[],
+  now: number,
+): void {
+  if (!items.length) return;
+  const key = topicKey(source, topic);
+  const previous = videoPool.get(key);
+  const existing = previous && previous.expiresAt > now ? previous.items : [];
+  videoPool.delete(key);
+  videoPool.set(key, {
+    expiresAt: now + CACHE_TTL_MS,
+    items: dedupe([...items, ...existing]).slice(0, 120),
+  });
+  videoPoolRevision++;
+  while (videoPool.size > 48) videoPool.delete(videoPool.keys().next().value!);
+}
+
+function pooledVideos(
+  topics: string[],
+  source: LiveSource | undefined,
+  now: number,
+): HarvestItem[] {
+  const sources = (['YouTube', 'Bilibili'] as const).filter((entry) => !source || source === entry);
+  return sources.flatMap((entrySource) =>
+    topics.flatMap((topic) => {
+      const key = topicKey(entrySource, topic);
+      const entry = videoPool.get(key);
+      if (!entry) return [];
+      if (entry.expiresAt > now) return entry.items;
+      videoPool.delete(key);
+      return [];
+    }),
+  );
+}
 
 type SourceResult = {
   source: LiveSource;
@@ -112,13 +155,14 @@ export async function harvestPublicSources(
   source?: LiveSource,
   localizedTags: string[] = [],
   cursor?: string,
+  includeVideoPool = false,
 ): Promise<HarvestPayload> {
   const now = Date.now();
   const terms = youtubeTags
     .map((tag) => tag.trim())
     .filter(Boolean)
     .slice(0, 2);
-  const cacheKey = `${source ?? 'all'}\u0001${terms.join('\u0000')}\u0001${localizedTags.join('\u0000')}\u0001${cursor ?? ''}\u0001${youtubeSearchKeyRevision()}\u0001${scholarKeyRevision()}\u0001${['youtube', 'scholar', 'github', 'instagram'].map(apiConfigurationRevision).join(':')}`;
+  const cacheKey = `${source ?? 'all'}\u0001${terms.join('\u0000')}\u0001${localizedTags.join('\u0000')}\u0001${cursor ?? ''}\u0001${includeVideoPool ? videoPoolRevision : '-'}\u0001${youtubeSearchKeyRevision()}\u0001${scholarKeyRevision()}\u0001${['youtube', 'scholar', 'github', 'instagram'].map(apiConfigurationRevision).join(':')}`;
   const snapshot = cached.get(cacheKey);
   if (!forceRefresh && snapshot && snapshot.expiresAt > now) {
     return { ...snapshot.payload, cache: 'hit' };
@@ -151,9 +195,14 @@ export async function harvestPublicSources(
       ? [collect('Bilibili', 'social', () => fetchBilibiliSearchPage(terms, localizedTags, cursor))]
       : []),
   ]);
-  const social = dedupe(
-    results.filter((result) => result.section === 'social').flatMap((result) => result.items),
-  );
+  if ((source === 'YouTube' || source === 'Bilibili') && terms.length === 1) {
+    const videos = results.find((result) => result.source === source)?.items ?? [];
+    rememberVideos(source, terms[0], videos, now);
+  }
+  const social = dedupe([
+    ...results.filter((result) => result.section === 'social').flatMap((result) => result.items),
+    ...(includeVideoPool ? pooledVideos(terms, source, now) : []),
+  ]);
   const academic = dedupe(
     results.filter((result) => result.section === 'academic').flatMap((result) => result.items),
   );

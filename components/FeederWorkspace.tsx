@@ -229,6 +229,7 @@ export default function FeederWorkspace({
     setError('');
     try {
       const params = new URLSearchParams();
+      params.set('pool', 'discover');
       if (force) params.set('refresh', 'true');
       const activeSearch = options.search !== undefined ? (options.search ?? '') : searchTag;
       const tags = activeSearch
@@ -615,7 +616,7 @@ export default function FeederWorkspace({
     setLoadingOlder(true);
     setOlderError('');
     try {
-      const params = new URLSearchParams({ source, cursor: page.cursor });
+      const params = new URLSearchParams({ source, cursor: page.cursor, pool: 'discover' });
       page.tags.forEach((tag) => params.append('tag', tag));
       page.localizedTags.forEach((tag) => params.append('tagZh', tag));
       const response = await fetch(`/api/harvest?${params}`, { cache: 'no-store' });

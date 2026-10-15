@@ -11,7 +11,12 @@ test('Settings migrates Garden, persists the Shorts switch, and controls nearby 
         'feed-gardener-demo-v1',
         JSON.stringify({
           page: 'garden',
-          preferences: { domains: ['ai-infrastructure'], tags: ['agents'] },
+          preferences: {
+            domains: ['ai-infrastructure'],
+            tags: ['agents'],
+            shortsDurationFilterEnabled: false,
+            blockedSources: ['Bilibili'],
+          },
         }),
       );
   });
@@ -129,4 +134,96 @@ test('Settings migrates Garden, persists the Shorts switch, and controls nearby 
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
   await expect(page).toHaveURL(/#settings$/);
   await expect(toggle).toBeChecked();
+});
+
+test('Shorts duration filter defaults to two minutes and saves presets, custom seconds, and off', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('feed-gardener:setup-guide:v2', '6');
+    if (!localStorage.getItem('feed-gardener-demo-v1'))
+      localStorage.setItem(
+        'feed-gardener-demo-v1',
+        JSON.stringify({
+          page: 'settings',
+          preferences: {
+            domains: ['ai-infrastructure'],
+            tags: ['agents'],
+            shortsNearbyTopics: false,
+            blockedSources: ['Bilibili'],
+          },
+        }),
+      );
+  });
+  await page.route('**/api/**', async (route) => {
+    const url = new URL(route.request().url());
+    let data: unknown = {};
+    if (url.pathname === '/api/harvest') {
+      data = {
+        sections: {
+          social: [30, 60, 90, 120, 121].map((durationSeconds, index) => {
+            const id = String(index + 1).padStart(11, '0');
+            return {
+              id: `youtube-${id}`,
+              source: 'YouTube',
+              section: 'social',
+              title: `Clip ${durationSeconds}`,
+              author: 'Test creator',
+              url: `https://www.youtube.com/watch?v=${id}`,
+              summary: '',
+              tags: ['Agent'],
+              domain: 'ai-infrastructure',
+              domainKeywords: [],
+              publishedAt: null,
+              durationSeconds,
+              provenance: { mode: 'public_api', sourceUrl: 'https://youtube.com' },
+            };
+          }),
+          academic: [],
+          opensource: [],
+        },
+        health: [],
+        warnings: [],
+        nextCursor: null,
+      };
+    } else if (url.pathname.includes('decisions')) {
+      data = { decision: { provider: 'jev', relevanceScore: 9, confidence: 0.95 } };
+    }
+    await route.fulfill({ json: { data, meta: { contractVersion: 'feed-gardener-api/2' } } });
+  });
+  await page.route('**/www.youtube.com/**', (route) => route.abort());
+  await page.goto('/');
+  const filter = page.getByRole('switch', { name: 'Filter videos longer than' });
+  await expect(filter).toBeChecked();
+  await expect(page.getByRole('button', { name: '2 min', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.goto('/#shorts');
+  await expect(page.locator('.short-card')).toHaveCount(4);
+  await page.goto('/#settings');
+  await page.getByRole('button', { name: '30 sec', exact: true }).click();
+  await page.goto('/#shorts');
+  await expect(page.locator('.short-card')).toHaveCount(1);
+  await page.goto('/#settings');
+  await page.getByRole('textbox', { name: 'Custom Shorts duration in seconds' }).fill('45');
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('feed-gardener-demo-v1')!).preferences
+            .shortsMaxDurationSeconds,
+      ),
+    )
+    .toBe(45);
+  await page.reload();
+  await expect(
+    page.getByRole('textbox', { name: 'Custom Shorts duration in seconds' }),
+  ).toHaveValue('45');
+  await page.goto('/#shorts');
+  await expect(page.locator('.short-card')).toHaveCount(1);
+  await page.goto('/#settings');
+  await filter.uncheck();
+  await page.goto('/#shorts');
+  await expect(page.locator('.short-card')).toHaveCount(4);
 });

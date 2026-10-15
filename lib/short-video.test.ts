@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { middleClip, parseVideoDuration } from './short-video.ts';
+import { bilibiliVideoId, middleClip, parseVideoDuration } from './short-video.ts';
 import { ShortVideoSession } from './short-video-feed.ts';
 import { defaultPreferences } from './feed.ts';
 import type { HarvestItem } from './crawler/types.ts';
@@ -19,6 +19,8 @@ test('clip boundaries stay centered, bounded and valid across durations', () => 
   assert.equal(parseVideoDuration('14:29'), 869);
   for (const invalid of ['LIVE', '', '2:99', '0:00'])
     assert.equal(parseVideoDuration(invalid), undefined);
+  assert.equal(bilibiliVideoId('https://www.bilibili.com/video/BV1pYaA6FE5T'), 'BV1pYaA6FE5T');
+  assert.equal(bilibiliVideoId('https://www.bilibili.com.evil.example/video/BV1pYaA6FE5T'), null);
 });
 
 const prefs = {
@@ -29,6 +31,7 @@ const prefs = {
   blockedTags: [],
   blockedSources: [],
   targetJevAverage: 8,
+  shortsDurationFilterEnabled: false,
   onlySelectedTags: true,
   requireAllSelectedTags: true,
   excludeUnselectedTags: true,
@@ -165,6 +168,99 @@ test('unknown scores remain unrated; duplicate pages are bounded and source bloc
   assert.ok(calls <= 4);
   const blocked = new ShortVideoSession({ ...prefs, blockedSources: ['YouTube'] }, mock);
   assert.equal((await blocked.next(new AbortController().signal)).length, 0);
+});
+
+test('Shorts duration limit includes the boundary and excludes longer or unknown videos', async () => {
+  const videos = [
+    { ...item(1), durationSeconds: 30 },
+    { ...item(2), durationSeconds: 60 },
+    { ...item(3), durationSeconds: 90 },
+    { ...item(4), durationSeconds: 120 },
+    { ...item(5), durationSeconds: 121 },
+    { ...item(6), durationSeconds: undefined },
+  ];
+  const mock: typeof fetch = async (url) => {
+    if (String(url).includes('decisions'))
+      return ok({ decision: { provider: 'jev', relevanceScore: 9, confidence: 0.95 } });
+    return payload(videos);
+  };
+  for (const [limit, expected] of [
+    [120, 4],
+    [90, 3],
+    [60, 2],
+    [30, 1],
+  ]) {
+    const session = new ShortVideoSession(
+      { ...prefs, shortsDurationFilterEnabled: true, shortsMaxDurationSeconds: limit },
+      mock,
+    );
+    assert.equal((await session.next(new AbortController().signal)).length, expected);
+  }
+  const disabled = new ShortVideoSession({ ...prefs, shortsDurationFilterEnabled: false }, mock);
+  assert.equal((await disabled.next(new AbortController().signal)).length, 4);
+});
+
+test('Shorts continues past a page of videos over the selected duration', async () => {
+  let pages = 0;
+  const mock: typeof fetch = async (url) => {
+    if (String(url).includes('decisions'))
+      return ok({ decision: { provider: 'jev', relevanceScore: 9, confidence: 0.95 } });
+    if (String(url).includes('suggest')) return ok({ suggestions: [] });
+    pages++;
+    return pages === 1
+      ? payload([item(1), item(2)], 'next')
+      : payload([{ ...item(3), durationSeconds: 30 }]);
+  };
+  const session = new ShortVideoSession(
+    { ...prefs, shortsDurationFilterEnabled: true, shortsMaxDurationSeconds: 30 },
+    mock,
+  );
+  const results = await session.next(new AbortController().signal);
+  assert.deepEqual(
+    results.map((entry) => entry.item.id),
+    [item(3).id],
+  );
+  assert.equal(pages, 2);
+});
+
+test('Bilibili Shorts uses its own search, duration limit, and platform block', async () => {
+  const bili = (id: string, seconds: number): HarvestItem => ({
+    ...item(1),
+    id: `bilibili-${id}`,
+    source: 'Bilibili',
+    url: `https://www.bilibili.com/video/${id}`,
+    embedUrl: `https://player.bilibili.com/player.html?bvid=${id}&autoplay=0`,
+    durationSeconds: seconds,
+  });
+  const requests: string[] = [];
+  const mock: typeof fetch = async (url) => {
+    if (String(url).includes('decisions'))
+      return ok({ decision: { provider: 'jev', relevanceScore: 9, confidence: 0.95 } });
+    if (String(url).includes('suggest')) return ok({ suggestions: [] });
+    requests.push(String(url));
+    return payload([bili('BV1pYaA6FE5T', 90), bili('BV1pYaA6FE5U', 150)]);
+  };
+  const preferences = {
+    ...prefs,
+    shortsDurationFilterEnabled: true,
+    shortsMaxDurationSeconds: 120,
+    shortsNearbyTopics: false,
+  };
+  const session = new ShortVideoSession(preferences, mock, '', 'Bilibili');
+  const results = await session.next(new AbortController().signal);
+  assert.deepEqual(
+    results.map((entry) => entry.item.durationSeconds),
+    [90],
+  );
+  assert.ok(requests.every((url) => url.includes('source=Bilibili')));
+  assert.ok(requests.every((url) => url.includes('tagZh=')));
+  const blocked = new ShortVideoSession(
+    { ...preferences, blockedSources: ['Bilibili'] },
+    mock,
+    '',
+    'Bilibili',
+  );
+  assert.deepEqual(await blocked.next(new AbortController().signal), []);
 });
 
 test('search or nearby failures preserve already buffered clips', async () => {

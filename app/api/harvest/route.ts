@@ -34,6 +34,7 @@ async function handleGET(request: Request) {
     requestedSource === null ? undefined : (requestedSource as LiveSource),
     localizedTags,
     cursor ?? undefined,
+    url.searchParams.get('pool') === 'discover',
   );
   return apiSuccess(payload, {
     headers: {
@@ -81,6 +82,10 @@ async function handlePUT(request: Request) {
   );
 }
 
-export async function GET(request: Request) { return withAccountContext(handleGET, false)(request); }
+export async function GET(request: Request) {
+  return withAccountContext(handleGET, false)(request);
+}
 
-export async function PUT(request: Request) { return withAccountContext(handlePUT, true)(request); }
+export async function PUT(request: Request) {
+  return withAccountContext(handlePUT, true)(request);
+}

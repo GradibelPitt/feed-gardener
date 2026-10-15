@@ -15,9 +15,23 @@ import {
 } from 'lucide-react';
 import { searchInterests, type Preferences } from '@/lib/feed';
 import type { HarvestItem } from '@/lib/crawler/types';
-import { ShortVideoSession, type ShortVideo } from '@/lib/short-video-feed';
+import { ShortVideoSession, type ShortVideo, type ShortVideoSource } from '@/lib/short-video-feed';
 import ShortVideoPlayer from './ShortVideoPlayer';
+import ShortBilibiliPlayer from './ShortBilibiliPlayer';
 import './short-video.css';
+
+const videoSources: ShortVideoSource[] = ['YouTube', 'Bilibili'];
+
+function mixUpcoming(current: ShortVideo[], incoming: ShortVideo[], active: number): ShortVideo[] {
+  if (!current.length || current.every((entry) => entry.item.source === incoming[0]?.item.source))
+    return [...current, ...incoming];
+  const keep = Math.min(current.length, active + 2);
+  const tail = current.slice(keep);
+  for (const entry of incoming) {
+    tail.splice(Math.floor(Math.random() * (tail.length + 1)), 0, entry);
+  }
+  return [...current.slice(0, keep), ...tail];
+}
 
 type Props = {
   preferences: Preferences;
@@ -62,17 +76,21 @@ function ShortVideoStream({
   onMutedChange: (muted: boolean) => void;
 }) {
   const interests = searchInterests(preferences);
-  const enabled =
-    (interests.length > 0 || !!query) && !preferences.blockedSources.includes('YouTube');
-  const session = useRef<ShortVideoSession | null>(null);
-  if (!session.current) session.current = new ShortVideoSession(preferences, fetch, query);
+  const sourceOrder = useRef(Math.random() < 0.5 ? videoSources : [...videoSources].reverse());
+  const sourceKey = sourceOrder.current
+    .filter((source) => !preferences.blockedSources.includes(source))
+    .join(',');
+  const enabled = (interests.length > 0 || !!query) && !!sourceKey;
+  const sessions = useRef(new Map<ShortVideoSource, ShortVideoSession>());
   const viewport = useRef<HTMLDivElement>(null);
   const lastScroll = useRef(0);
   const touchStart = useRef<number | null>(null);
   const [searchVisible, setSearchVisible] = useState(!!query);
   const [searchDraft, setSearchDraft] = useState(query);
-  const controller = useRef<AbortController | null>(null);
-  const busy = useRef(false);
+  const controllers = useRef(new Map<ShortVideoSource, AbortController>());
+  const busy = useRef(new Set<ShortVideoSource>());
+  const paused = useRef(new Set<ShortVideoSource>());
+  const activeRef = useRef(0);
   const [items, setItems] = useState<ShortVideo[]>([]);
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -80,42 +98,59 @@ function ShortVideoStream({
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
-    if (busy.current || !enabled) return;
-    const abort = new AbortController();
-    controller.current = abort;
-    busy.current = true;
-    setLoading(true);
-    setError('');
-    try {
-      const next = await session.current!.next(abort.signal);
-      if (abort.signal.aborted) return;
-      setItems((previous) => [...previous, ...next]);
-      setNotice(session.current!.warning);
-      setPausedLoading(!next.length);
-    } catch {
-      if (abort.signal.aborted) return;
-      setError('Could not load more videos. Your current clips are still here.');
-      setPausedLoading(true);
-    } finally {
-      if (!abort.signal.aborted) {
-        busy.current = false;
-        setLoading(false);
+  const load = useCallback(() => {
+    if (!enabled) return;
+    const sources = sourceKey.split(',') as ShortVideoSource[];
+    for (const source of sources) {
+      if (busy.current.has(source) || paused.current.has(source)) continue;
+      const abort = new AbortController();
+      controllers.current.set(source, abort);
+      busy.current.add(source);
+      setLoading(true);
+      setError('');
+      let session = sessions.current.get(source);
+      if (!session) {
+        session = new ShortVideoSession(preferences, fetch, query, source);
+        sessions.current.set(source, session);
       }
+      void session
+        .next(abort.signal)
+        .then((next) => {
+          if (abort.signal.aborted) return;
+          if (next.length) setItems((previous) => mixUpcoming(previous, next, activeRef.current));
+          else paused.current.add(source);
+          if (session.warning)
+            setNotice((previous) =>
+              [...new Set([previous, session.warning].filter(Boolean))].join(' '),
+            );
+        })
+        .catch(() => {
+          if (abort.signal.aborted) return;
+          paused.current.add(source);
+          setError('Could not load more videos. Your current clips are still here.');
+        })
+        .finally(() => {
+          if (controllers.current.get(source) !== abort) return;
+          controllers.current.delete(source);
+          busy.current.delete(source);
+          setLoading(busy.current.size > 0);
+          setPausedLoading(sources.every((entry) => paused.current.has(entry)));
+        });
     }
-  }, [enabled]);
+  }, [enabled, preferences, query, sourceKey]);
 
   useEffect(() => {
     // Reset after React development effect replay as well as normal mounts.
-    busy.current = false;
+    busy.current.clear();
     return () => {
-      controller.current?.abort();
-      busy.current = false;
+      controllers.current.forEach((controller) => controller.abort());
+      controllers.current.clear();
+      busy.current.clear();
     };
   }, []);
 
   useEffect(() => {
-    if (enabled && !pausedLoading && active >= items.length - 3) void load();
+    if (enabled && !pausedLoading && items.length - active <= 3) load();
   }, [enabled, active, items.length, pausedLoading, load]);
 
   useEffect(() => {
@@ -124,8 +159,11 @@ function ShortVideoStream({
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.6)
-            setActive(Number((entry.target as HTMLElement).dataset.index));
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+            const index = Number((entry.target as HTMLElement).dataset.index);
+            activeRef.current = index;
+            setActive(index);
+          }
         }
       },
       { root, threshold: [0.6] },
@@ -139,7 +177,7 @@ function ShortVideoStream({
     viewport.current
       ?.querySelector(`[data-index="${index}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    if (direction > 0 && active >= items.length - 2 && !loading) void load();
+    if (direction > 0 && active >= items.length - 2 && !loading) load();
   };
 
   return (
@@ -209,10 +247,12 @@ function ShortVideoStream({
       {!enabled ? (
         <div className="shorts-empty">
           <Clapperboard size={38} />
-          <h2>{interests.length ? 'YouTube is turned off' : 'Your interests. In motion.'}</h2>
+          <h2>
+            {interests.length ? 'Video platforms are turned off' : 'Your interests. In motion.'}
+          </h2>
           <p>
             {interests.length
-              ? 'Enable YouTube in your interests to start watching.'
+              ? 'Enable YouTube or Bilibili in your interests to start watching.'
               : 'Choose a few interests and we’ll find the moments worth watching.'}
           </p>
           <button onClick={onEditInterests}>Choose interests</button>
@@ -274,13 +314,17 @@ function ShortVideoStream({
                     {entry.topic}
                   </div>
                   {index >= active - 1 && index <= active + 2 ? (
-                    <ShortVideoPlayer
-                      key={entry.item.id}
-                      item={entry.item}
-                      active={index === active}
-                      muted={muted}
-                      onMutedChange={onMutedChange}
-                    />
+                    entry.item.source === 'Bilibili' ? (
+                      <ShortBilibiliPlayer item={entry.item} active={index === active} />
+                    ) : (
+                      <ShortVideoPlayer
+                        key={entry.item.id}
+                        item={entry.item}
+                        active={index === active}
+                        muted={muted}
+                        onMutedChange={onMutedChange}
+                      />
+                    )
                   ) : (
                     <div className="short-inactive">
                       {entry.item.imageUrl && (
@@ -291,8 +335,8 @@ function ShortVideoStream({
                   )}
                   <div className="short-card-detail">
                     <p>
-                      {entry.item.author || 'YouTube'}
-                      <span> · YouTube</span>
+                      {entry.item.author || entry.item.source}
+                      <span> · {entry.item.source}</span>
                     </p>
                     <h2>{entry.item.title}</h2>
                   </div>
@@ -331,8 +375,9 @@ function ShortVideoStream({
                   <p>{error || 'You’re caught up for now. Try another refresh.'}</p>
                   <button
                     onClick={() => {
+                      paused.current.clear();
                       setPausedLoading(false);
-                      void load();
+                      load();
                     }}
                   >
                     Try more videos

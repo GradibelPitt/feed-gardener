@@ -133,6 +133,90 @@ test('video pages append in order and duplicate video IDs do not reappear', () =
   assert.equal(merged.nextCursor, null);
 });
 
+test('YouTube videos rejected by the Shorts duration setting remain in the Discover pool', async () => {
+  const originalFetch = globalThis.fetch;
+  setYouTubeSearchApiKey('test-key');
+  let searches = 0;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith('/search')) {
+      searches++;
+      const id = searches === 1 ? 'abcdefghijk' : 'lmnopqrstuv';
+      return Response.json({
+        items: [{ id: { videoId: id }, snippet: { title: `Video ${searches}` } }],
+      });
+    }
+    const id = url.searchParams.get('id');
+    return Response.json({
+      items: [
+        {
+          id,
+          status: { embeddable: true, madeForKids: false },
+          contentDetails: { duration: searches === 1 ? 'PT10M' : 'PT30S' },
+        },
+      ],
+    });
+  };
+  try {
+    const shortsFetch = await harvestPublicSources(true, ['ShortsPoolTest'], 'YouTube');
+    assert.equal(shortsFetch.sections.social[0]?.durationSeconds, 600);
+    const discoverFetch = await harvestPublicSources(
+      true,
+      ['ShortsPoolTest'],
+      'YouTube',
+      [],
+      undefined,
+      true,
+    );
+    assert.deepEqual(
+      discoverFetch.sections.social.map((item) => item.durationSeconds).sort((a, b) => a! - b!),
+      [30, 600],
+    );
+    assert.equal(searches, 2);
+  } finally {
+    setYouTubeSearchApiKey(null);
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('Bilibili videos remain available to Discover after the Shorts duration filter', async () => {
+  const originalFetch = globalThis.fetch;
+  let searches = 0;
+  globalThis.fetch = async () => {
+    searches++;
+    return Response.json({
+      code: 0,
+      data: {
+        result: [
+          {
+            bvid: searches === 1 ? 'BV1pYaA6FE5T' : 'BV1pYaA6FE5U',
+            title: `Video ${searches}`,
+            duration: searches === 1 ? '10:00' : '0:30',
+          },
+        ],
+      },
+    });
+  };
+  try {
+    const shortsFetch = await harvestPublicSources(true, ['BiliPoolTest'], 'Bilibili');
+    assert.equal(shortsFetch.sections.social[0]?.durationSeconds, 600);
+    const discoverFetch = await harvestPublicSources(
+      true,
+      ['BiliPoolTest'],
+      'Bilibili',
+      [],
+      undefined,
+      true,
+    );
+    assert.deepEqual(
+      discoverFetch.sections.social.map((item) => item.durationSeconds).sort((a, b) => a! - b!),
+      [30, 600],
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('entering an optional YouTube key switches from public search and invalidates its snapshot', async () => {
   const originalFetch = globalThis.fetch;
   const originalEnvKey = process.env.YOUTUBE_API_KEY;

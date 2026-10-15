@@ -15,6 +15,17 @@ type SearchEntry = {
   };
 };
 
+function durationSeconds(value: string | undefined): number | undefined {
+  const parts = /^P(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(value ?? '');
+  if (!parts) return undefined;
+  const seconds =
+    Number(parts[1] ?? 0) * 86400 +
+    Number(parts[2] ?? 0) * 3600 +
+    Number(parts[3] ?? 0) * 60 +
+    Number(parts[4] ?? 0);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : undefined;
+}
+
 type YouTubeSearchRuntime = { apiKey: string | null; revision: number };
 const runtime = globalThis as typeof globalThis & {
   __feederYouTubeSearch?: YouTubeSearchRuntime;
@@ -145,18 +156,26 @@ export async function fetchYouTubeSearchPage(
     .filter((id): id is string => Boolean(id && /^[A-Za-z0-9_-]{11}$/.test(id)));
   if (!videoIds.length) return { items: [], nextCursor };
   const statusEndpoint = new URL('https://www.googleapis.com/youtube/v3/videos');
-  statusEndpoint.searchParams.set('part', 'status');
+  statusEndpoint.searchParams.set('part', 'status,contentDetails');
   statusEndpoint.searchParams.set('id', videoIds.join(','));
   const statusResponse = await fetchYouTubeEndpoint(statusEndpoint, apiKey);
   if (!statusResponse.ok)
     throw new Error(`YouTube video status returned HTTP ${statusResponse.status}`);
   const statusPayload = (await statusResponse.json()) as {
-    items?: Array<{ id?: string; status?: { embeddable?: boolean; madeForKids?: boolean } }>;
+    items?: Array<{
+      id?: string;
+      status?: { embeddable?: boolean; madeForKids?: boolean };
+      contentDetails?: { duration?: string };
+    }>;
   };
+  const videoDetails = Array.isArray(statusPayload.items) ? statusPayload.items : [];
   const embeddableIds = new Set(
-    (Array.isArray(statusPayload.items) ? statusPayload.items : [])
+    videoDetails
       .filter((item) => item.status?.embeddable === true && item.status.madeForKids === false)
       .map((item) => item.id),
+  );
+  const durations = new Map(
+    videoDetails.map((item) => [item.id, durationSeconds(item.contentDetails?.duration)]),
   );
   const fetchedAt = new Date().toISOString();
   const items = payload.items.flatMap((entry) => {
@@ -184,6 +203,7 @@ export async function fetchYouTubeSearchPage(
         domainKeywords,
         ...(imageUrl?.startsWith('https://') ? { imageUrl } : {}),
         ...(embedUrl ? { embedUrl } : {}),
+        ...(durations.get(videoId) ? { durationSeconds: durations.get(videoId) } : {}),
         provenance: {
           mode: 'official_api' as const,
           sourceUrl: 'https://www.googleapis.com/youtube/v3/search',

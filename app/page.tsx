@@ -148,6 +148,14 @@ function readPreferences(value: unknown): Preferences {
         : 8,
     customTags,
     shortsNearbyTopics: raw.shortsNearbyTopics !== false,
+    shortsDurationFilterEnabled: raw.shortsDurationFilterEnabled !== false,
+    shortsMaxDurationSeconds:
+      typeof raw.shortsMaxDurationSeconds === 'number' &&
+      Number.isInteger(raw.shortsMaxDurationSeconds) &&
+      raw.shortsMaxDurationSeconds >= 1 &&
+      raw.shortsMaxDurationSeconds <= 86400
+        ? raw.shortsMaxDurationSeconds
+        : 120,
     onlySelectedTags: raw.onlySelectedTags === true,
     requireAllSelectedTags: raw.requireAllSelectedTags === true,
     excludeUnselectedTags: raw.excludeUnselectedTags === true,
@@ -513,10 +521,26 @@ function Workspace() {
         ) : page === 'settings' ? (
           <WorkspaceSettings
             nearbyTopicsEnabled={preferences.shortsNearbyTopics !== false}
+            durationFilterEnabled={preferences.shortsDurationFilterEnabled !== false}
+            maxDurationSeconds={preferences.shortsMaxDurationSeconds ?? 120}
             onNearbyTopicsChange={(enabled) =>
               setPreferences((current) => ({
                 ...current,
                 shortsNearbyTopics: enabled,
+                version: current.version + 1,
+              }))
+            }
+            onDurationFilterChange={(enabled) =>
+              setPreferences((current) => ({
+                ...current,
+                shortsDurationFilterEnabled: enabled,
+                version: current.version + 1,
+              }))
+            }
+            onMaxDurationChange={(seconds) =>
+              setPreferences((current) => ({
+                ...current,
+                shortsMaxDurationSeconds: seconds,
                 version: current.version + 1,
               }))
             }

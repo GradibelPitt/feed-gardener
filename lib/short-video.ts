@@ -28,6 +28,16 @@ export function videoId(url: string): string | null {
   }
 }
 
+export function bilibiliVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== 'www.bilibili.com' || parsed.protocol !== 'https:') return null;
+    return /^\/video\/(BV[0-9A-Za-z]{10})\/?$/.exec(parsed.pathname)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function videoTime(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 }

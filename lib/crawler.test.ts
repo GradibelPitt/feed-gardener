@@ -86,7 +86,13 @@ test('YouTube search maps official title and thumbnail and ignores malformed vid
     assert.equal(url.hostname, 'www.googleapis.com');
     if (url.pathname.endsWith('/videos'))
       return Response.json({
-        items: [{ id: 'abcdefghijk', status: { embeddable: true, madeForKids: false } }],
+        items: [
+          {
+            id: 'abcdefghijk',
+            status: { embeddable: true, madeForKids: false },
+            contentDetails: { duration: 'PT1M30S' },
+          },
+        ],
       });
     assert.equal(url.searchParams.get('q'), 'Robotics');
     return Response.json({
@@ -109,6 +115,7 @@ test('YouTube search maps official title and thumbnail and ignores malformed vid
     assert.equal(items.length, 1);
     assert.equal(items[0].title, 'Robot demo');
     assert.equal(items[0].imageUrl, 'https://i.ytimg.com/example.jpg');
+    assert.equal(items[0].durationSeconds, 90);
     assert.equal(
       items[0].embedUrl,
       'https://www.youtube-nocookie.com/embed/abcdefghijk?autoplay=0',
@@ -228,6 +235,7 @@ test('Bilibili searches both language labels and deduplicates video cards', asyn
             author: '研究者',
             pic: '//i1.hdslb.com/bfs/archive/example.jpg',
             tag: '机器人,人工智能,AI',
+            duration: '1:30',
             pubdate: 1790253000,
           },
         ],
@@ -243,6 +251,7 @@ test('Bilibili searches both language labels and deduplicates video cards', asyn
     assert.equal(items[0].title, '机器人 与 AI');
     assert.equal(items[0].imageUrl, 'https://i1.hdslb.com/bfs/archive/example.jpg');
     assert.equal(items[0].embedUrl, bilibiliEmbedUrl('BV1pYaA6FE5T'));
+    assert.equal(items[0].durationSeconds, 90);
     assert.equal(items[0].provenance.mode, 'public_api');
     assert.equal(bilibiliEmbedUrl('BV1pYaA6FE5T&autoplay=1'), null);
     assert.equal(
@@ -312,6 +321,7 @@ test('Bilibili uses its public app search when web search blocks the hosted site
           author: 'Lab',
           cover: 'https://i0.hdslb.com/example.jpg',
           ptime: 1790373000 - index - page * 20,
+          duration: 75,
           share: { video: { bvid: `BV${String((page - 1) * 20 + index).padStart(10, '0')}` } },
         })),
       },
@@ -321,6 +331,7 @@ test('Bilibili uses its public app search when web search blocks the hosted site
     const first = await fetchBilibiliSearchPage(['Robot demo']);
     assert.equal(first.items.length, 20);
     assert.equal(first.items[0].provenance.sourceUrl, 'https://app.bilibili.com/x/v2/search');
+    assert.equal(first.items[0].durationSeconds, 75);
     assert.ok(first.nextCursor);
     const second = await fetchBilibiliSearchPage(['Robot demo'], [], first.nextCursor!);
     assert.equal(second.items.length, 1);

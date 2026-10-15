@@ -2,6 +2,7 @@ import { domains } from '../feed.ts';
 import { classifyDomain, cleanText, fetchWithTimeout, keywordTags } from './core.ts';
 import type { HarvestItem } from './types.ts';
 import { fetchBilibiliViaTls } from './bilibili-transport.ts';
+import { parseVideoDuration } from '../short-video.ts';
 
 const SEARCH_URL = 'https://api.bilibili.com/x/web-interface/wbi/search/type';
 const APP_SEARCH_URL = 'https://app.bilibili.com/x/v2/search';
@@ -40,7 +41,14 @@ type SearchVideo = {
   pic?: unknown;
   tag?: unknown;
   pubdate?: unknown;
+  duration?: unknown;
 };
+
+function bilibiliDuration(value: unknown): number | undefined {
+  if (typeof value === 'number')
+    return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+  return typeof value === 'string' ? parseVideoDuration(value) : undefined;
+}
 
 export function bilibiliSearchTerms(tags: string[], localizedTags: string[] = []): string[] {
   return [
@@ -123,6 +131,7 @@ export function parseBilibiliSearch(
       typeof entry.pubdate === 'number' && Number.isFinite(entry.pubdate)
         ? new Date(entry.pubdate * 1000).toISOString()
         : null;
+    const durationSeconds = bilibiliDuration(entry.duration);
     return [
       {
         id: `bilibili-${bvid}`,
@@ -145,6 +154,7 @@ export function parseBilibiliSearch(
         domainKeywords,
         ...(imageUrl.startsWith('https://') ? { imageUrl } : {}),
         embedUrl,
+        ...(durationSeconds ? { durationSeconds } : {}),
         provenance: { mode: 'public_api' as const, sourceUrl, fetchedAt },
       },
     ];
@@ -177,6 +187,7 @@ export function parseBilibiliAppSearch(
       author?: unknown;
       cover?: unknown;
       ptime?: unknown;
+      duration?: unknown;
     };
     if (video.goto !== 'av') return [];
     const published = Number(video.ptime);
@@ -187,6 +198,7 @@ export function parseBilibiliAppSearch(
         author: video.author,
         pic: video.cover,
         pubdate: Number.isFinite(published) && published > 0 ? published : undefined,
+        duration: video.duration,
       },
     ];
   });

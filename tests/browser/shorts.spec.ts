@@ -10,9 +10,10 @@ test.beforeEach(async ({ page }) => {
           domains: ['ai-infrastructure'],
           tags: ['agents'],
           customTags: [],
-          blockedSources: [],
+          blockedSources: ['Bilibili'],
           blockedTags: [],
           targetJevAverage: 8,
+          shortsDurationFilterEnabled: false,
         },
       }),
     );
