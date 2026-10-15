@@ -54,6 +54,7 @@ export type HarvestItem = {
   domainKeywords: string[];
   imageUrl?: string;
   embedUrl?: string;
+  durationSeconds?: number;
   metrics?: {
     stars?: number;
     score?: number;

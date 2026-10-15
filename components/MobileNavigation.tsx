@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Bookmark, CircleHelp, Compass, Layers3, Sprout } from 'lucide-react';
+import { Bookmark, CircleHelp, Compass, Layers3, Sprout, Clapperboard } from 'lucide-react';
 import type { WorkspacePage } from './WorkspaceSidebar';
 
 const tabs = [
   { id: 'discover', icon: Compass, label: 'Discover' },
+  { id: 'shorts', icon: Clapperboard, label: 'Shorts' },
   { id: 'garden', icon: Sprout, label: 'Garden' },
   { id: 'library', icon: Layers3, label: 'Library' },
   { id: 'saved', icon: Bookmark, label: 'Saved' },

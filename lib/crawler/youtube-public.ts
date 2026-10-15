@@ -1,6 +1,7 @@
 import { classifyDomain, cleanText, keywordTags, stableId } from './core.ts';
 import type { HarvestItem } from './types.ts';
 import { videoSearchTerms } from './video-search-terms.ts';
+import { parseVideoDuration } from '../short-video.ts';
 import demoSnapshots from './youtube-demo-snapshots.json' with { type: 'json' };
 
 const ENDPOINT = 'https://www.youtube.com/youtubei/v1/search?prettyPrint=false';
@@ -73,6 +74,7 @@ export function parseYouTubeSearch(
         domain,
         domainKeywords,
         imageUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+        durationSeconds: parseVideoDuration(text(video.lengthText)),
         provenance: { mode: 'public_api', sourceUrl, fetchedAt },
       });
     }

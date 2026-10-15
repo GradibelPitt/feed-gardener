@@ -19,6 +19,7 @@ import {
 import ResourceLibrary from '@/components/ResourceLibrary';
 import WorkspaceSidebar, { type WorkspacePage } from '@/components/WorkspaceSidebar';
 import MobileNavigation from '@/components/MobileNavigation';
+import ShortVideoFeed from '@/components/ShortVideoFeed';
 import FeederWorkspace from '@/components/FeederWorkspace';
 import { InterestIntroTarget } from '@/components/InterestIntro';
 import { defaultPreferences, domains, type CustomTag, type Preferences } from '@/lib/feed';
@@ -37,7 +38,7 @@ import { matchedHarvestTagIds, readFeederEvents, readTagJev, type FeederEvent } 
 
 type Page = WorkspacePage;
 const isWorkspacePage = (value: string): value is Page =>
-  ['discover', 'garden', 'library', 'saved'].includes(value);
+  ['discover', 'shorts', 'garden', 'library', 'saved'].includes(value);
 const STORAGE = 'feed-gardener-demo-v1';
 const RESOURCES_STORAGE = 'feed-gardener-resources-v1';
 const COLLECTIONS_STORAGE = 'feed-gardener-collections-v1';
@@ -276,10 +277,7 @@ export default function Home() {
           }
         }
         setPreferences(savedPreferences);
-        if (
-          typeof stored.page === 'string' &&
-          isWorkspacePage(stored.page)
-        ) {
+        if (typeof stored.page === 'string' && isWorkspacePage(stored.page)) {
           setPage(stored.page as Page);
         }
       }
@@ -488,7 +486,7 @@ export default function Home() {
     <div className="app-shell">
       <WorkspaceSidebar page={page} t={t} onNavigate={navigate} />
       <MobileNavigation page={page} onNavigate={navigate} />
-      <div className="main-shell">
+      <div className={`main-shell ${page === 'shorts' ? 'shorts-shell' : ''}`}>
         {offline && (
           <div className="offline-banner">
             <Radio size={16} />
@@ -498,7 +496,14 @@ export default function Home() {
             )}
           </div>
         )}
-        {page === 'discover' || page === 'garden' ? (
+        {page === 'shorts' ? (
+          <ShortVideoFeed
+            preferences={preferences}
+            onEditInterests={manageInterests}
+            onSave={saveResource}
+            savedUrls={resources.map((resource) => resource.url)}
+          />
+        ) : page === 'discover' || page === 'garden' ? (
           <main className="discover-page workspace-content" data-page={page}>
             <FeederWorkspace
               page={page}

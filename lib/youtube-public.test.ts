@@ -7,6 +7,7 @@ const video = {
     videoId: 'abcdefghijk',
     title: { runs: [{ text: 'Robot learning' }] },
     ownerText: { simpleText: 'Lab' },
+    lengthText: { simpleText: '12:34' },
   },
 };
 const contents = [
@@ -32,6 +33,7 @@ test('public search normalizes real video fields without inventing dates or embe
   assert.equal(parsed.items.length, 1);
   assert.equal(parsed.items[0].title, 'Robot learning');
   assert.equal(parsed.items[0].publishedAt, null);
+  assert.equal(parsed.items[0].durationSeconds, 754);
   assert.equal(parsed.items[0].embedUrl, undefined);
   assert.equal(parsed.items[0].provenance.mode, 'public_api');
   assert.equal(parsed.continuation, 'NEXT%3D');

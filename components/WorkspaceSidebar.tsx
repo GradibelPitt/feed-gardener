@@ -6,15 +6,17 @@ import {
   Bookmark,
   CircleHelp,
   Compass,
+  Clapperboard,
   Layers3,
   Leaf,
   Sprout,
 } from 'lucide-react';
 
-export type WorkspacePage = 'discover' | 'garden' | 'library' | 'saved';
+export type WorkspacePage = 'discover' | 'shorts' | 'garden' | 'library' | 'saved';
 
 export const WORKSPACE_TABS = [
   { id: 'discover', icon: Compass, zh: '发现好内容', en: 'Discover' },
+  { id: 'shorts', icon: Clapperboard, zh: '短视频', en: 'Shorts' },
   { id: 'garden', icon: Sprout, zh: '我的信息花园', en: 'My garden' },
   { id: 'library', icon: Layers3, zh: '资源库', en: 'Resource library' },
 ] as const;
