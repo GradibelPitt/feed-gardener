@@ -161,6 +161,72 @@ test('search and source browsing keep refresh accessible', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Refresh search', exact: true })).toBeVisible();
 });
 
+test('two-topic search fetches both topics and groups shared matches first', async ({ page }) => {
+  const requests: string[] = [];
+  await page.route('**/api/harvest?**', async (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    const source = params.get('source')!;
+    const term = params.get('tag')!;
+    requests.push(`${source}:${term}`);
+    const titles =
+      source === 'YouTube' && term === 'DeepSeek'
+        ? ['DeepSeek and AI research', 'DeepSeek models']
+        : source === 'YouTube' && term === 'AI'
+          ? ['DeepSeek and AI research', 'AI systems']
+          : [];
+    const items = titles.map((title) => ({
+      id: title.toLowerCase().replaceAll(' ', '-'),
+      source,
+      section: 'social',
+      title,
+      summary: '',
+      author: 'Research lab',
+      url: `https://www.youtube.com/watch?v=${title.toLowerCase().replaceAll(' ', '-')}`,
+      tags: [],
+      domain: 'ai',
+      domainKeywords: [],
+      publishedAt: null,
+      provenance: {
+        mode: 'official_api',
+        sourceUrl: 'https://www.youtube.com',
+        fetchedAt: '2026-10-14T00:00:00Z',
+      },
+    }));
+    await route.fulfill({
+      json: {
+        data: {
+          generatedAt: '2026-10-14T00:00:00Z',
+          cache: 'fresh',
+          sections: { social: items, academic: [], opensource: [] },
+          health: [{ source, section: 'social', state: 'live', itemCount: items.length }],
+          warnings: [],
+          nextCursor: null,
+        },
+        meta: { contractVersion: 'feed-gardener-api/2' },
+      },
+    });
+  });
+  await page.goto('/');
+  await page.getByRole('searchbox', { name: 'Search public sources by tag' }).fill('DeepSeek + AI');
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await expect(page.locator('main article')).toHaveCount(3);
+  expect(requests.sort()).toEqual([
+    'Bilibili:AI',
+    'Bilibili:DeepSeek',
+    'YouTube:AI',
+    'YouTube:DeepSeek',
+  ]);
+  await expect(page.locator('main article h2')).toHaveText([
+    'DeepSeek and AI research',
+    'DeepSeek models',
+    'AI systems',
+  ]);
+  await expect(page.getByRole('heading', { name: 'DeepSeek + AI', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'DeepSeek only', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'AI only', exact: true })).toBeVisible();
+  await expectNoOverflow(page);
+});
+
 test('home-screen metadata and icon files are served', async ({ page, request }) => {
   await page.goto('/');
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
@@ -226,7 +292,12 @@ test('populated video feed stays readable and saves from a phone', async ({
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   const cards = page.locator('main article');
   await expect(cards).toHaveCount(6);
-  await page.getByLabel('Videos per row').selectOption('4');
+  if (isMobile) {
+    await expect(page.getByLabel('Videos per row')).toBeHidden();
+  } else {
+    await expect(page.getByLabel('Videos per row')).toBeVisible();
+    await page.getByLabel('Videos per row').selectOption('4');
+  }
   await expectNoOverflow(page);
   if (isMobile) {
     const first = (await cards.nth(0).boundingBox())!;

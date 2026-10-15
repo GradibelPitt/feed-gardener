@@ -563,6 +563,16 @@
   gap: 15px;
 }
 
+.searchGroupHeading {
+  grid-column: 1 / -1;
+  margin: 14px 0 0;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #d3ddd3;
+  color: #243b31;
+  font-size: 17px;
+  font-weight: 700;
+}
+
 .videoCards[data-columns='1'] {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
@@ -1285,6 +1295,9 @@
     width: 100%;
     min-height: 48px;
     flex-wrap: wrap;
+  }
+  .feedControls > .videoColumnsControl {
+    display: none;
   }
   .feedControls input {
     flex: 1;
