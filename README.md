@@ -26,8 +26,8 @@ Jev evaluates titles, not full articles or videos. Its score is a relevance esti
 **Requirements:** Node.js 22.13+ and pnpm 11.19.
 
 ```sh
-git clone https://github.com/GradibelPitt/feed-gardener-project-pack.git
-cd feed-gardener-project-pack
+git clone https://github.com/GradibelPitt/feed-gardener.git
+cd feed-gardener
 pnpm install --frozen-lockfile
 pnpm dev
 ```
