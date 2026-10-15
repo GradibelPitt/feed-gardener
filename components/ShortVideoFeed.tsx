@@ -83,9 +83,7 @@ function ShortVideoStream({
   const enabled = (interests.length > 0 || !!query) && !!sourceKey;
   const sessions = useRef(new Map<ShortVideoSource, ShortVideoSession>());
   const viewport = useRef<HTMLDivElement>(null);
-  const lastScroll = useRef(0);
-  const touchStart = useRef<number | null>(null);
-  const [searchVisible, setSearchVisible] = useState(!!query);
+  const [searchVisible, setSearchVisible] = useState(false);
   const [searchDraft, setSearchDraft] = useState(query);
   const controllers = useRef(new Map<ShortVideoSource, AbortController>());
   const busy = useRef(new Set<ShortVideoSource>());
@@ -264,25 +262,6 @@ function ShortVideoStream({
             ref={viewport}
             tabIndex={0}
             aria-label="Short video feed"
-            onScroll={(event) => {
-              const top = event.currentTarget.scrollTop;
-              if (top > lastScroll.current + 8) setSearchVisible(true);
-              lastScroll.current = top;
-            }}
-            onTouchStart={(event) => {
-              touchStart.current = event.touches[0]?.clientY ?? null;
-            }}
-            onTouchEnd={(event) => {
-              if (
-                touchStart.current !== null &&
-                touchStart.current - event.changedTouches[0].clientY > 40
-              )
-                setSearchVisible(true);
-              touchStart.current = null;
-            }}
-            onTouchCancel={() => {
-              touchStart.current = null;
-            }}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget) return;
               if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

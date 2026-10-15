@@ -366,7 +366,7 @@ test('player error keeps next and original-video actions available', async ({ pa
   await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
 });
 
-test('mobile video fills the viewing area and swiping reveals working search', async ({
+test('mobile video fills the viewing area and search opens only from its icon', async ({
   page,
   isMobile,
   browserName,
@@ -422,7 +422,7 @@ test('mobile video fills the viewing area and swiping reveals working search', a
       element.scrollTop = element.clientHeight;
     });
   }
-  await expect(page.getByRole('search')).toBeVisible();
+  await expect(page.getByRole('search')).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => (window as any).__players[1].state)).toBe(1);
   await expect
     .poll(() =>
@@ -436,6 +436,8 @@ test('mobile video fills the viewing area and swiping reveals working search', a
         ),
     )
     .toBeLessThan(0.01);
+  await page.getByRole('button', { name: 'Search videos', exact: true }).click();
+  await expect(page.getByRole('search')).toBeVisible();
   const searchInput = page.getByRole('searchbox', { name: 'Search videos' });
   await searchInput.fill('Ocean life');
   const searchRequest = page.waitForRequest((request) => {
@@ -444,6 +446,7 @@ test('mobile video fills the viewing area and swiping reveals working search', a
   });
   await page.getByRole('button', { name: 'Submit video search' }).click();
   await searchRequest;
+  await expect(page.getByRole('search')).toHaveCount(0);
   await expect(page.locator('.short-card').first().locator('.short-card-topic')).toContainText(
     'Ocean life',
   );
@@ -451,6 +454,7 @@ test('mobile video fills the viewing area and swiping reveals working search', a
     savedPreferences,
   );
   expect((await page.locator('.shorts-viewport').boundingBox())!).toEqual(viewport);
+  await page.getByRole('button', { name: 'Search videos', exact: true }).click();
   await page.screenshot({ path: info.outputPath('shorts-search.png'), fullPage: true });
   await page.getByRole('button', { name: 'Close search and return to For you' }).click();
   await expect(page.getByRole('search')).toHaveCount(0);
