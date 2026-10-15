@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowDownToLine,
   Check,
   CheckCheck,
   ChevronDown,
@@ -15,7 +14,6 @@ import {
   Radio,
   ShieldCheck,
   Sprout,
-  Trash2,
   X,
 } from 'lucide-react';
 import ResourceLibrary from '@/components/ResourceLibrary';
@@ -23,7 +21,6 @@ import WorkspaceSidebar, { type WorkspacePage } from '@/components/WorkspaceSide
 import MobileNavigation from '@/components/MobileNavigation';
 import FeederWorkspace from '@/components/FeederWorkspace';
 import { InterestIntroTarget } from '@/components/InterestIntro';
-import YouTubeConnection from '@/components/YouTubeConnection';
 import { defaultPreferences, domains, type CustomTag, type Preferences } from '@/lib/feed';
 import { visibleInterfaceLocale } from '@/lib/locale';
 import { normalizeBehaviorWeights, type BehaviorSignal } from '@/lib/strategy';
@@ -40,7 +37,7 @@ import { matchedHarvestTagIds, readFeederEvents, readTagJev, type FeederEvent } 
 
 type Page = WorkspacePage;
 const isWorkspacePage = (value: string): value is Page =>
-  ['discover', 'garden', 'library', 'saved', 'connections'].includes(value);
+  ['discover', 'garden', 'library', 'saved'].includes(value);
 const STORAGE = 'feed-gardener-demo-v1';
 const RESOURCES_STORAGE = 'feed-gardener-resources-v1';
 const COLLECTIONS_STORAGE = 'feed-gardener-collections-v1';
@@ -235,10 +232,8 @@ export default function Home() {
   const [toast, setToast] = useState('');
   const [ready, setReady] = useState(false);
   const [splitStorageReady, setSplitStorageReady] = useState(false);
-  const [youtubeOutcome, setYoutubeOutcome] = useState('');
   const scrollPositions = useRef<Partial<Record<Page, number>>>({});
   const [offline, setOffline] = useState(false);
-  const [resetConfirm, setResetConfirm] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
   const [skipGuideConfirm, setSkipGuideConfirm] = useState(false);
   const t = (zh: string, en: string) => (locale === 'zh' ? zh : en);
@@ -283,7 +278,7 @@ export default function Home() {
         setPreferences(savedPreferences);
         if (
           typeof stored.page === 'string' &&
-          ['discover', 'library', 'saved', 'garden', 'connections'].includes(stored.page)
+          isWorkspacePage(stored.page)
         ) {
           setPage(stored.page as Page);
         }
@@ -322,14 +317,7 @@ export default function Home() {
     }
     const returnUrl = new URL(window.location.href);
     const requestedPage = returnUrl.hash.slice(1);
-    if (isWorkspacePage(requestedPage)) setPage(requestedPage);
-    if (returnUrl.searchParams.has('youtube')) {
-      setYoutubeOutcome(returnUrl.searchParams.get('youtube') || '');
-      setPage('connections');
-      returnUrl.searchParams.delete('youtube');
-      returnUrl.hash = 'connections';
-      window.history.replaceState(null, '', returnUrl.pathname + returnUrl.search + returnUrl.hash);
-    }
+    if (requestedPage) setPage(isWorkspacePage(requestedPage) ? requestedPage : 'discover');
     setReady(true);
     const update = () => setOffline(!navigator.onLine);
     update();
@@ -352,10 +340,8 @@ export default function Home() {
     );
     const onHistoryChange = () => {
       const next = window.location.hash.slice(1);
-      if (isWorkspacePage(next)) {
-        scrollPositions.current[page] = window.scrollY;
-        setPage(next);
-      }
+      scrollPositions.current[page] = window.scrollY;
+      setPage(isWorkspacePage(next) ? next : 'discover');
     };
     window.addEventListener('popstate', onHistoryChange);
     window.addEventListener('hashchange', onHistoryChange);
@@ -401,7 +387,7 @@ export default function Home() {
     try {
       localStorage.setItem(RESOURCES_STORAGE, JSON.stringify(resources));
     } catch {
-      setToast('Saved items could not be stored. Export your data before closing this session.');
+      setToast('Saved items could not be stored in this browser.');
     }
   }, [resources, ready, splitStorageReady]);
   useEffect(() => {
@@ -409,7 +395,7 @@ export default function Home() {
     try {
       localStorage.setItem(COLLECTIONS_STORAGE, JSON.stringify(collections));
     } catch {
-      setToast('Collections could not be stored. Export your data before closing this session.');
+      setToast('Collections could not be stored in this browser.');
     }
   }, [collections, ready, splitStorageReady]);
   useEffect(() => {
@@ -417,7 +403,7 @@ export default function Home() {
     try {
       localStorage.setItem(EVENTS_STORAGE, JSON.stringify(feederEvents));
     } catch {
-      setToast('Feedback could not be stored. Export your data before closing this session.');
+      setToast('Feedback could not be stored in this browser.');
     }
   }, [feederEvents, ready, splitStorageReady]);
   useEffect(() => {
@@ -485,31 +471,6 @@ export default function Home() {
     setDraft(null);
     setGuideStep((current) => (current === 2 || current === 3 ? 1 : current));
   };
-  const exportData = () => {
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          {
-            schema: 'feed-gardener-demo/1',
-            preferences,
-            resources,
-            collections,
-            feederEvents,
-          },
-          null,
-          2,
-        ),
-      ],
-      { type: 'application/json' },
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'feed-gardener-local-data.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    setToast(t('偏好和个人记录已导出', 'Preferences and personal records exported'));
-  };
   if (!ready) {
     return (
       <div className="boot-screen" aria-label="Feed Gardener">
@@ -565,83 +526,6 @@ export default function Home() {
               guideStep={guideStep}
               onGuideAdvance={advanceGuide}
             />
-          </main>
-        ) : page === 'connections' ? (
-          <main className="settings-page">
-            <h1>{t('连接与隐私', 'Connections & privacy')}</h1>
-            <YouTubeConnection outcome={youtubeOutcome} />
-            <div className="privacy-banner">
-              <ShieldCheck size={26} />
-              <div>
-                <strong>{t('仅本机数据', 'Local data only')}</strong>
-              </div>
-            </div>
-            <div className="connection-list">
-              {[
-                {
-                  name: 'Bilibili',
-                  mark: 'B站',
-                  statusZh: '公开源',
-                  statusEn: 'Public source',
-                  live: true,
-                },
-                {
-                  name: 'arXiv',
-                  mark: 'AX',
-                  statusZh: '公开源',
-                  statusEn: 'Public source',
-                  live: true,
-                },
-                {
-                  name: 'GitHub',
-                  mark: 'GH',
-                  statusZh: '公开源',
-                  statusEn: 'Public source',
-                  live: true,
-                },
-                {
-                  name: 'Hacker News',
-                  mark: 'HN',
-                  statusZh: '公开源',
-                  statusEn: 'Public source',
-                  live: true,
-                },
-              ].map((connection) => (
-                <div className="connection-row" key={connection.name}>
-                  <span className="connection-logo connection-lettermark">{connection.mark}</span>
-                  <div>
-                    <h3>{connection.name}</h3>
-                  </div>
-                  <span className={`status-neutral ${connection.live ? 'status-live' : ''}`}>
-                    {t(connection.statusZh, connection.statusEn)}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="settings-two">
-              <section className="panel settings-panel">
-                <h3>
-                  <ArrowDownToLine size={18} />
-                  {t('导出数据', 'Export data')}
-                </h3>
-                <button className="secondary-button" onClick={exportData}>
-                  {t('导出本地数据', 'Export local data')}
-                  <ArrowDownToLine size={15} />
-                </button>
-              </section>
-              <section className="panel settings-panel">
-                <h3>
-                  <Trash2 size={18} />
-                  {t('清除数据', 'Clear data')}
-                </h3>
-                <button
-                  className="secondary-button danger-text"
-                  onClick={() => setResetConfirm(true)}
-                >
-                  {t('清除演示数据', 'Clear demo data')}
-                </button>
-              </section>
-            </div>
           </main>
         ) : page === 'library' || page === 'saved' ? (
           <ResourceLibrary
@@ -988,47 +872,6 @@ export default function Home() {
                 {t('保存，让发现开始', 'Save my interests')}
               </button>
             </InterestIntroTarget>
-          </div>
-        </Modal>
-      )}
-      {resetConfirm && (
-        <Modal
-          title={t('清除这个演示空间？', 'Clear this demo space?')}
-          closeLabel={t('关闭', 'Close')}
-          onClose={() => setResetConfirm(false)}
-        >
-          <div className="reset-content">
-            <p>{t('清除当前浏览器中的演示数据。', 'Clear demo data in this browser.')}</p>
-            <button className="secondary-button" onClick={() => setResetConfirm(false)}>
-              {t('保留数据', 'Keep my data')}
-            </button>
-            <button
-              className="primary-button"
-              onClick={() => {
-                try {
-                  Object.keys(localStorage)
-                    .filter((key) => key.startsWith('feed-gardener'))
-                    .forEach((key) => localStorage.removeItem(key));
-                } catch {
-                  setToast(
-                    t(
-                      '无法清除浏览器存储，请在浏览器设置中清理。',
-                      'Cannot clear browser storage. Please use browser settings.',
-                    ),
-                  );
-                  return;
-                }
-                setPreferences(englishDefaultPreferences());
-                setResources([]);
-                setCollections([]);
-                setFeederEvents([]);
-                setGuideStep(0);
-                setResetConfirm(false);
-                setToast(t('演示空间已重置', 'Your demo space has been reset'));
-              }}
-            >
-              {t('确认清除', 'Clear demo data')}
-            </button>
           </div>
         </Modal>
       )}

@@ -79,6 +79,13 @@ const catalog = domains.flatMap((domain) =>
   domain.tags.map((tag) => ({ ...tag, domainId: domain.id })),
 );
 const broadGithubTopics = ['ai', 'c', 'java', 'javascript', 'python', 'rust', 'typescript'];
+const searchPrompts = [
+  'What are we digging into today?',
+  'Got a curiosity to chase?',
+  'What caught your eye lately?',
+  'Where should we explore next?',
+  'What topic is calling your name?',
+];
 const t = (zh: string, en: string, locale: Locale) => (locale === 'zh' ? zh : en);
 
 function HelpHint({ title, children }: { title: string; children: ReactNode }) {
@@ -146,7 +153,13 @@ export default function FeederWorkspace({
   const scrollIgnoreUntilRef = useRef(0);
   const [query, setQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [searchPlaceholder, setSearchPlaceholder] = useState(searchPrompts[0]);
   const [searchTag, setSearchTag] = useState('');
+  useEffect(() => {
+    if (page === 'discover') {
+      setSearchPlaceholder(searchPrompts[Math.floor(Math.random() * searchPrompts.length)]);
+    }
+  }, [page]);
   const [displayCount, setDisplayCount] = useState(20);
   const [videoColumns, setVideoColumns] = useState<'auto' | '1' | '2' | '3' | '4'>('auto');
   const [ratingRevision, setRatingRevision] = useState(0);
@@ -721,7 +734,7 @@ export default function FeederWorkspace({
   const scoringState = scoring
     ? 'Scoring'
     : !loaded
-      ? 'Fetch candidates'
+      ? ''
       : candidates.length === 0
         ? 'No candidates'
         : simulation.targetMet
@@ -882,7 +895,7 @@ export default function FeederWorkspace({
                 enterKeyHint="search"
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search public sources"
+                placeholder={searchPlaceholder}
                 aria-label="Search public sources by tag"
                 maxLength={80}
               />
@@ -1151,7 +1164,7 @@ export default function FeederWorkspace({
                 className={styles.cardDetails}
                 hidden={!relevanceDetailsOpen}
               >
-                <strong className={styles.scoreState}>{scoringState}</strong>
+                {scoringState && <strong className={styles.scoreState}>{scoringState}</strong>}
                 <p>
                   Only items with a confident Jev score at or above {targetAverage} are shown.
                   Higher means fewer, closer matches.
@@ -1203,14 +1216,16 @@ export default function FeederWorkspace({
                 </label>
               )}
             </div>
-            <div className={styles.simulationStatus} role="status">
-              {dualSearchTerms.length ? `${visible.length} matching public videos` : scoringState}
-              {!dualSearchTerms.length &&
-                scoringDone &&
-                !simulation.targetMet &&
-                candidates.length > 0 &&
-                ': available confident scores cannot meet this target.'}
-            </div>
+            {(loaded || scoring) && (
+              <div className={styles.simulationStatus} role="status">
+                {dualSearchTerms.length ? `${visible.length} matching public videos` : scoringState}
+                {!dualSearchTerms.length &&
+                  scoringDone &&
+                  !simulation.targetMet &&
+                  candidates.length > 0 &&
+                  ': available confident scores cannot meet this target.'}
+              </div>
+            )}
             {scoringError && (
               <div className={styles.warning} role="alert">
                 {scoringError}
@@ -1248,11 +1263,6 @@ export default function FeederWorkspace({
                 <button className={styles.secondary} onClick={onEditInterests}>
                   Choose interests
                 </button>
-              </div>
-            )}
-            {!loading && !sourceVideoLoading && !loaded && goalTags.length > 0 && (
-              <div className={styles.empty}>
-                Fetch public sources above, or choose one in Sources to begin.
               </div>
             )}
             {!loading && loaded && candidates.length === 0 ? (

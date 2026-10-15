@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Bookmark, CircleHelp, Compass, Layers3, Settings2, Sprout } from 'lucide-react';
+import { Bookmark, CircleHelp, Compass, Layers3, Sprout } from 'lucide-react';
 import type { WorkspacePage } from './WorkspaceSidebar';
 
 const tabs = [
@@ -9,7 +9,6 @@ const tabs = [
   { id: 'garden', icon: Sprout, label: 'Garden' },
   { id: 'library', icon: Layers3, label: 'Library' },
   { id: 'saved', icon: Bookmark, label: 'Saved' },
-  { id: 'connections', icon: Settings2, label: 'Settings' },
 ] as const;
 
 export default function MobileNavigation({

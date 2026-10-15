@@ -11,7 +11,6 @@ async function navigate(page: Page, label: string, mobile: boolean) {
     Garden: 'My garden',
     Library: 'Resource library',
     Saved: 'Saved for later',
-    Settings: 'Connections & privacy',
   };
   if (!mobile && label === 'Saved') {
     const library = page
@@ -72,16 +71,19 @@ test('navigation, history, responsive shell, and touch targets', async ({
     ['Garden', 'My garden'],
     ['Library', 'Resource library'],
     ['Saved', 'Saved for later'],
-    ['Settings', 'Connections & privacy'],
   ]) {
     await navigate(page, label, !!isMobile);
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     await expectNoOverflow(page);
   }
+  await expect(page.getByRole('button', { name: 'Settings' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Connections & privacy' })).toHaveCount(0);
   await page.goBack();
-  await expect(page.getByRole('heading', { name: 'Saved for later' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Resource library' })).toBeVisible();
   await page.goForward();
-  await expect(page.getByRole('heading', { name: 'Connections & privacy' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Saved for later' })).toBeVisible();
+  await page.goto('/#connections');
+  await expect(page.getByRole('heading', { name: 'Discover', exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -363,8 +365,8 @@ test('switching pages restores library scroll and help returns to the current pa
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const savedY = await page.evaluate(() => window.scrollY);
   expect(savedY).toBeGreaterThan(0);
-  await navigate(page, 'Settings', true);
-  await expect(page.getByRole('heading', { name: 'Connections & privacy' })).toBeVisible();
+  await navigate(page, 'Garden', true);
+  await expect(page.getByRole('heading', { name: 'My garden' })).toBeVisible();
   await navigate(page, 'Library', true);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(savedY, 0);
   await page.locator('.mobile-app-header').getByRole('link', { name: 'Instructions' }).click();

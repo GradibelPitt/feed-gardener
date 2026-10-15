@@ -8,11 +8,10 @@ import {
   Compass,
   Layers3,
   Leaf,
-  Link2,
   Sprout,
 } from 'lucide-react';
 
-export type WorkspacePage = 'discover' | 'garden' | 'library' | 'saved' | 'connections';
+export type WorkspacePage = 'discover' | 'garden' | 'library' | 'saved';
 
 export const WORKSPACE_TABS = [
   { id: 'discover', icon: Compass, zh: '发现好内容', en: 'Discover' },
@@ -95,19 +94,11 @@ export default function WorkspaceSidebar({ page, t, onNavigate }: Props) {
               {t('信息不必更多，只需更适合你。', 'A little less scrolling. A little more growing.')}
             </p>
           </div>
-          <button
-            className={`nav-item ${page === 'connections' ? 'active' : ''}`}
-            onClick={() => navigate('connections')}
-          >
-            <Link2 size={18} />
-            {t('连接与隐私', 'Connections & privacy')}
-          </button>
           <a className="nav-item" href="/instructions">
             <CircleHelp size={18} />
             {t('使用说明', 'Instructions')}
             <ArrowUpRight size={14} className="push-right" />
           </a>
-          <div className="sidebar-footer">Feeder · {t('本地工作空间', 'Local workspace')}</div>
         </div>
       </aside>
     </>
