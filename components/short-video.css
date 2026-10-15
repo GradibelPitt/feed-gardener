@@ -249,15 +249,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 12px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   min-height: 40px;
   color: #e4eddf;
   background: #ffffff0c;
   border: 1px solid #ffffff25;
-  border-radius: 22px;
+  border-radius: 50%;
   text-decoration: none;
-  font-size: 12px;
   cursor: pointer;
 }
 .short-counter {
@@ -616,16 +616,6 @@
     flex-direction: column;
     gap: 12px;
     padding: 0;
-  }
-  .short-card-actions a {
-    flex-direction: column-reverse;
-  }
-  .short-card-actions button {
-    flex-direction: column;
-  }
-  .short-card-actions :is(button, a) {
-    gap: 2px;
-    font-size: 9px;
   }
   .short-card-actions button:disabled {
     opacity: 1;

@@ -3,34 +3,23 @@
   <h1>Feed Gardener</h1>
   <p>
     <a href="https://feed-gardener.gradibel.chatgpt.site/#discover">Website</a> |
-    <a href="#features">Features</a> |
     <a href="#quick-start">Quick start</a> |
-    <a href="docs/interface_contract.md">Docs</a> |
-    <a href="LICENSE">License</a> |
-    <a href="#star-history">Star history</a>
-  </p>
-  <p>
-    <a href="https://github.com/GradibelPitt/feed-gardener-project-pack/stargazers"><img src="https://img.shields.io/github/stars/GradibelPitt/feed-gardener-project-pack?style=flat-square&amp;logo=github&amp;label=Stars" alt="GitHub stars"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2e5b42?style=flat-square" alt="MIT License"></a>
-    <a href="#quick-start"><img src="https://img.shields.io/badge/Node.js-22.13%2B-43853d?style=flat-square&amp;logo=node.js&amp;logoColor=white" alt="Node.js 22.13 or newer"></a>
+    <a href="LICENSE">License</a>
   </p>
 </div>
 
-**A local-first workspace for discovering, filtering, and saving public content around your interests.**
+**Find content around your interests, watch the moments that matter, and save what you want to revisit.**
 
-Feed Gardener brings results from multiple public sources into one feed. You choose the topics and exclusions; the app fetches candidates on demand, explains why items appear, and keeps your reading list and feedback locally. Optional Jev scoring filters titles by a minimum relevance score. It does not change recommendations or activity on the source platforms.
+Feed Gardener brings public sources into one local workspace. You choose the topics; it fetches results on demand, explains why they appear, and keeps your reading list and feedback on your device. The browser interface is called **Feeder**.
 
-> The browser interface currently uses the name **Feeder**.
+## What you can do
 
-## Features
+- **Explore one feed:** Browse results from arXiv, GitHub, Hacker News, and Bilibili. Add YouTube or Google Scholar with an API key.
+- **Watch Shorts:** See short clips from YouTube videos matched to your interests, or search for a topic. Active clips play automatically when the browser allows it. Sound preference carries across clips, and compact icons let you save a video or open the full version.
+- **Shape your feed:** Choose interests, block topics or sources, and see why an item appears. Optional Jev scoring helps filter titles by relevance.
+- **Keep what matters:** Save links with notes and reading status. Hide or reject feed items, and undo feedback. Your library and preferences stay local.
 
-- **Cross-source discovery:** Browse public results from arXiv, GitHub, Hacker News, and Bilibili. YouTube search and Google Scholar are available when their API keys are configured.
-- **Explicit controls:** Select interests, block topics or sources, and set a minimum Jev title-relevance score from 1 to 10. Items need at least 70% scoring confidence to appear in the scored feed.
-- **Transparent results:** Inspect an item's source and the interest, source, and freshness signals behind its placement. Missing scores and source errors are shown rather than filled in.
-- **Local feedback and library:** Save links for later, hide or reject feed items, undo feedback, and organize saved resources with notes and reading status.
-- **Separate CLI:** Use the same domain logic from the command line with its own local state.
-
-Jev evaluates **titles**, not full articles or videos. Its score is a Feed Gardener relevance estimate, not a quality judgment or a score from the source platform.
+Jev evaluates titles, not full articles or videos. Its score is a relevance estimate from Feed Gardener, not a source-platform rating.
 
 ## Quick start
 
@@ -43,33 +32,23 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Open [http://127.0.0.1:3000](http://127.0.0.1:3000). On macOS or Windows, you can use `Launch.command` or `Launch.bat` instead; the launchers install missing dependencies, build, and start the app.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000), choose interests in **Discover → Manage interests**, then browse **Discover** or **Shorts**. You can also start the app with `Launch.command` on macOS or `Launch.bat` on Windows.
 
-The workspace opens directly. In **Discover → Manage interests**, choose topics or enter your own. Then fetch public sources from **Discover**. The local library and preferences do not require an account or database.
+The library and preferences work without an account or database. Shorts and YouTube search need a YouTube API key.
 
 ### Optional integrations
 
 Copy [`.env.example`](.env.example) to `.env.local` and add only the credentials you need:
 
-| Variable | Enables |
-| --- | --- |
-| `TYPESAFE_API_KEY` | Jev title scoring and the relevance-filtered feed |
-| `YOUTUBE_API_KEY` | Public YouTube video search |
-| `SERPAPI_API_KEY` | Google Scholar search through SerpApi |
-| `GITHUB_TOKEN` | A higher GitHub Search API rate limit |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional read-only YouTube account connection |
+| Variable                                   | Enables                                            |
+| ------------------------------------------ | -------------------------------------------------- |
+| `TYPESAFE_API_KEY`                         | Optional Jev title scoring and relevance filtering |
+| `YOUTUBE_API_KEY`                          | Public YouTube video search                        |
+| `SERPAPI_API_KEY`                          | Google Scholar search through SerpApi              |
+| `GITHUB_TOKEN`                             | A higher GitHub Search API rate limit              |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional read-only YouTube account connection      |
 
-YouTube and Google Scholar search keys can also be entered in their source views for the current local server session. See [`.env.example`](.env.example) for the full configuration list and the OAuth redirect URI. Without a Jev key, public-source browsing and the library remain available, but unscored items do not enter the relevance-filtered feed.
-
-## Project layout
-
-| Path | Purpose |
-| --- | --- |
-| [`app/`](app/) | Next.js pages and HTTP routes |
-| [`components/`](components/) | Workspace and source UI |
-| [`lib/`](lib/) | Feed logic, scoring, storage, and source adapters |
-| [`cli/`](cli/) | Command-line interface |
-| [`docs/`](docs/) | API contract and project notes |
+You can also enter YouTube and Google Scholar keys in their source views for the current local server session. See [`.env.example`](.env.example) for other settings. Without a Jev key, public-source browsing and the library still work.
 
 ## Development
 
@@ -80,14 +59,10 @@ pnpm build
 pnpm cli -- help
 ```
 
-The app is a local prototype. Public-source availability and result counts depend on the upstream services and configured keys. Recommendation quality has not been validated in a real-user study. Feedback in Feed Gardener affects only its local experience; the app does not read platform cookies, autoplay content, or write likes and subscriptions.
+Feed Gardener is a local prototype. Source availability depends on upstream services and configured keys. Your feedback changes only this app's feed; it does not change recommendations, likes, or subscriptions on the source platforms.
 
-For implementation details, see the [API contract](docs/interface_contract.md) and [generated project structure](docs/project_structure.md).
+For implementation details, see the [API contract](docs/interface_contract.md) and [project structure](docs/project_structure.md).
 
 ## License
 
 Feed Gardener is licensed under the [MIT License](LICENSE). Bundled third-party materials retain their own notices: [DM Sans (SIL Open Font License 1.1)](public/fonts/dmsans-OFL.txt) and the [TypeSafe AI skill (MIT)](.agents/skills/typesafe-ai/LICENSE).
-
-## Star history
-
-[![Star history chart for Feed Gardener](https://api.star-history.com/svg?repos=GradibelPitt/feed-gardener-project-pack&type=Date)](https://www.star-history.com/#GradibelPitt/feed-gardener-project-pack&Date)

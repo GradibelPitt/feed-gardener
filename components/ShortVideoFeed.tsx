@@ -303,10 +303,14 @@ function ShortVideoStream({
                       aria-label={saved ? 'Video saved' : 'Save video'}
                     >
                       {saved ? <Check size={18} /> : <Bookmark size={18} />}
-                      <span>{saved ? 'Saved' : 'Save'}</span>
                     </button>
-                    <a href={entry.item.url} target="_blank" rel="noreferrer">
-                      <span>Full video</span> <ArrowUpRight size={17} />
+                    <a
+                      href={entry.item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Full video"
+                    >
+                      <ArrowUpRight size={17} />
                     </a>
                     <span className="short-counter">{index + 1}</span>
                   </div>
