@@ -875,7 +875,7 @@ export default function FeederWorkspace({
             <SlidersHorizontal size={16} /> Manage interests in Discover
           </button>
         </header>
-        <div className={styles.twoColumns}>
+        <div className={styles.twoColumns} style={{ display: 'none' }}>
           <section className={styles.panel}>
             <div className={styles.headingWithHelp}>
               <h2>Nearby topics</h2>
