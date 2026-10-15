@@ -29,12 +29,15 @@ type Props = {
 export default function ShortVideoFeed(props: Props) {
   const [revision, setRevision] = useState(0);
   const [query, setQuery] = useState('');
+  const [muted, setMuted] = useState(false);
   const key = JSON.stringify([props.preferences, revision, query]);
   return (
     <ShortVideoStream
       key={key}
       {...props}
       query={query}
+      muted={muted}
+      onMutedChange={setMuted}
       onSearch={setQuery}
       onRefresh={() => setRevision((value) => value + 1)}
     />
@@ -49,7 +52,15 @@ function ShortVideoStream({
   onRefresh,
   query,
   onSearch,
-}: Props & { onRefresh: () => void; query: string; onSearch: (query: string) => void }) {
+  muted,
+  onMutedChange,
+}: Props & {
+  onRefresh: () => void;
+  query: string;
+  onSearch: (query: string) => void;
+  muted: boolean;
+  onMutedChange: (muted: boolean) => void;
+}) {
   const interests = searchInterests(preferences);
   const enabled =
     (interests.length > 0 || !!query) && !preferences.blockedSources.includes('YouTube');
@@ -247,6 +258,7 @@ function ShortVideoStream({
                   className="short-card"
                   key={entry.item.id}
                   data-index={index}
+                  data-active={index === active}
                   aria-label={entry.item.title}
                 >
                   <div className="short-card-topic">
@@ -261,8 +273,14 @@ function ShortVideoStream({
                     </span>
                     {entry.topic}
                   </div>
-                  {index === active ? (
-                    <ShortVideoPlayer key={entry.item.id} item={entry.item} />
+                  {index >= active - 1 && index <= active + 2 ? (
+                    <ShortVideoPlayer
+                      key={entry.item.id}
+                      item={entry.item}
+                      active={index === active}
+                      muted={muted}
+                      onMutedChange={onMutedChange}
+                    />
                   ) : (
                     <div className="short-inactive">
                       {entry.item.imageUrl && (

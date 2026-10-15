@@ -25,15 +25,19 @@ test.beforeEach(async ({ page }) => {
         destroyed = false;
         loads: any[] = [];
         muted = true;
+        videoId: string;
         events: any;
         frame: HTMLIFrameElement;
         constructor(element: HTMLElement, options: any) {
+          this.videoId = options.videoId;
           this.events = options.events;
           this.frame = document.createElement('iframe');
           this.frame.title = 'Test YouTube player';
           element.replaceWith(this.frame);
           host.__players.push(this);
-          setTimeout(() => this.events.onReady({ target: this }), 0);
+          setTimeout(() => {
+            if (!this.destroyed) this.events.onReady({ target: this });
+          }, host.__readyDelay || 0);
         }
         loadVideoById(clip: any) {
           this.loads.push(clip);
@@ -41,6 +45,11 @@ test.beforeEach(async ({ page }) => {
           this.playVideo();
         }
         playVideo() {
+          if (host.__blockSound && !this.muted) {
+            this.state = 2;
+            this.events.onAutoplayBlocked();
+            return;
+          }
           this.state = 1;
           this.events.onStateChange({ target: this, data: 1 });
         }
@@ -121,7 +130,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test('Shorts stops at clip end, replays, destroys the previous player on scroll, and loads more', async ({
+test('Shorts stops at clip end, replays, reuses prepared players on scroll, and loads more', async ({
   page,
   isMobile,
 }, info) => {
@@ -131,17 +140,17 @@ test('Shorts stops at clip end, replays, destroys the previous player on scroll,
   await expect(page.locator('.shorts-heading h1')).toContainText('Shorts');
   await expect(page.locator('.short-card')).toHaveCount(4);
   await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
-  expect(await page.evaluate(() => (window as any).__players.at(-1).loads[0])).toMatchObject({
+  expect(await page.evaluate(() => (window as any).__players[0].loads[0])).toMatchObject({
     startSeconds: 270,
     endSeconds: 330,
   });
-  await page.getByRole('button', { name: 'Unmute clip' }).click();
-  expect(await page.evaluate(() => (window as any).__players.at(-1).muted)).toBe(false);
+  await expect(page.getByRole('button', { name: 'Mute clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[0].muted)).toBe(false);
   await page.evaluate(() => {
-    (window as any).__players.at(-1).time = 330;
+    (window as any).__players[0].time = 330;
   });
   await expect(page.getByRole('button', { name: 'Replay clip' })).toBeVisible();
-  expect(await page.evaluate(() => (window as any).__players.at(-1).state)).toBe(2);
+  expect(await page.evaluate(() => (window as any).__players[0].state)).toBe(2);
   await page.getByRole('button', { name: 'Replay clip' }).click();
   await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
   await page.locator('.short-card').first().getByRole('button', { name: 'Save video' }).click();
@@ -155,12 +164,8 @@ test('Shorts stops at clip end, replays, destroys the previous player on scroll,
     .poll(() =>
       page.evaluate(() => (window as any).__players.filter((p: any) => !p.destroyed).length),
     )
-    .toBe(1);
-  await expect
-    .poll(() =>
-      page.evaluate(() => (window as any).__players.filter((p: any) => p.destroyed).length),
-    )
-    .toBeGreaterThan(0);
+    .toBe(4);
+  await expect.poll(() => page.evaluate(() => (window as any).__players[0].state)).toBe(2);
   await expect(page.locator('.short-card')).toHaveCount(8);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
@@ -175,6 +180,121 @@ test('Shorts stops at clip end, replays, destroys the previous player on scroll,
     true,
   );
   expect(errors).toEqual([]);
+});
+
+test('preloads two clips, preserves buffers and sound preference, and bounds player count', async ({
+  page,
+}) => {
+  await page.goto('/#shorts');
+  await expect.poll(() => page.evaluate(() => (window as any).__players.length)).toBe(3);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).__players.map((p: any) => ({
+          state: p.state,
+          muted: p.muted,
+          loads: p.loads.length,
+        })),
+      ),
+    )
+    .toEqual([
+      { state: 1, muted: false, loads: 1 },
+      { state: 2, muted: true, loads: 1 },
+      { state: 2, muted: true, loads: 1 },
+    ]);
+  await page.getByRole('button', { name: 'Mute clip', exact: true }).click();
+  const scrollTo = async (index: number) => {
+    await page.locator('.shorts-viewport').evaluate((element, n) => {
+      element.scrollTop = element.clientHeight * n;
+    }, index);
+    await expect(page.locator(`.short-card[data-index="${index}"]`)).toHaveAttribute(
+      'data-active',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  };
+  await scrollTo(1);
+  await expect(page.getByRole('button', { name: 'Unmute clip', exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(() => {
+      const p = (window as any).__players[1];
+      return { destroyed: p.destroyed, loads: p.loads.length, muted: p.muted, time: p.time };
+    }),
+  ).toEqual({ destroyed: false, loads: 1, muted: true, time: 270 });
+  await page.getByRole('button', { name: 'Unmute clip', exact: true }).click();
+  await scrollTo(0);
+  await expect(page.getByRole('button', { name: 'Mute clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[0].loads.length)).toBe(1);
+  await scrollTo(2);
+  await expect.poll(() => page.evaluate(() => (window as any).__players[0].destroyed)).toBe(true);
+  expect(
+    await page.evaluate(() => {
+      const players = (window as any).__players.filter((p: any) => !p.destroyed);
+      return {
+        count: players.length,
+        audible: players.filter((p: any) => !p.muted).length,
+        playing: players.filter((p: any) => p.state === 1).length,
+      };
+    }),
+  ).toEqual({ count: 4, audible: 1, playing: 1 });
+});
+
+test('blocked sound autoplay offers an explicit play action without silently muting', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    (window as any).__blockSound = true;
+  });
+  await page.goto('/#shorts');
+  await expect(page.getByRole('button', { name: 'Tap to play with sound' })).toBeVisible();
+  await page.evaluate(() => {
+    (window as any).__blockSound = false;
+  });
+  await page.getByRole('button', { name: 'Tap to play with sound' }).click();
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[0].muted)).toBe(false);
+  await page.evaluate(() => {
+    (window as any).__blockSound = true;
+  });
+  await page.locator('.shorts-viewport').evaluate((element) => {
+    element.scrollTop = element.clientHeight;
+  });
+  await expect(page.getByRole('button', { name: 'Tap to play with sound' })).toBeVisible();
+  await page.evaluate(() => {
+    (window as any).__blockSound = false;
+  });
+  await page.getByRole('button', { name: 'Tap to play with sound' }).click();
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__players[1].loads.length)).toBe(1);
+});
+
+test('a player that becomes ready after scrolling stays muted and paused offscreen', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    (window as any).__readyDelay = 1500;
+  });
+  await page.goto('/#shorts');
+  await expect(page.locator('.short-card')).toHaveCount(4);
+  await page.locator('.shorts-viewport').evaluate((element) => {
+    element.scrollTop = element.clientHeight;
+  });
+  await expect(page.locator('.short-card[data-index="1"]')).toHaveAttribute('data-active', 'true');
+  await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as any).__players.slice(0, 3).map((p: any) => ({
+          state: p.state,
+          muted: p.muted,
+        })),
+      ),
+    )
+    .toEqual([
+      { state: 2, muted: true },
+      { state: 1, muted: false },
+      { state: 2, muted: true },
+    ]);
 });
 
 test('empty interests do not request videos; direct entry and history work', async ({
@@ -201,7 +321,7 @@ test('player error keeps next and original-video actions available', async ({ pa
   await page.goto('/#shorts');
   await expect(page.getByRole('button', { name: 'Pause clip', exact: true })).toBeVisible();
   await page.evaluate(() => {
-    const p = (window as any).__players.at(-1);
+    const p = (window as any).__players[0];
     p.events.onError({ target: p, data: 101 });
   });
   await expect(
@@ -225,14 +345,14 @@ test('mobile video fills the viewing area and swiping reveals working search', a
   await expect(page.locator('.mobile-app-header')).toBeHidden();
   await expect(page.getByRole('search')).toHaveCount(0);
   const viewport = (await page.locator('.shorts-viewport').boundingBox())!;
-  const frame = (await page.locator('.short-player-mount iframe').boundingBox())!;
+  const frame = (await page.locator('.short-card[data-active="true"] iframe').boundingBox())!;
   const nav = (await page.locator('.mobile-tab-bar').boundingBox())!;
   expect(viewport.y).toBe(0);
   expect(frame).toEqual(viewport);
   expect(viewport.height).toBeCloseTo(nav.y, 0);
   for (const action of [
     page.getByRole('button', { name: 'Pause clip', exact: true }),
-    page.getByRole('button', { name: 'Unmute clip' }),
+    page.getByRole('button', { name: 'Mute clip', exact: true }),
     page.locator('.short-card').first().getByRole('button', { name: 'Save video' }),
     page.locator('.short-card').first().getByRole('link', { name: 'Full video' }),
   ]) {
@@ -271,9 +391,7 @@ test('mobile video fills the viewing area and swiping reveals working search', a
     });
   }
   await expect(page.getByRole('search')).toBeVisible();
-  await expect
-    .poll(() => page.evaluate(() => (window as any).__players.some((p: any) => p.destroyed)))
-    .toBe(true);
+  await expect.poll(() => page.evaluate(() => (window as any).__players[1].state)).toBe(1);
   await expect
     .poll(() =>
       page

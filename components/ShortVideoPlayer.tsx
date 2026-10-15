@@ -1,12 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Pause, Play, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import type { HarvestItem } from '@/lib/crawler/types';
 import { middleClip, videoId, videoTime } from '@/lib/short-video';
 import { loadYouTubePlayer, type YouTubePlayer } from '@/lib/youtube-player';
 
-export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
+export default function ShortVideoPlayer({
+  item,
+  active,
+  muted,
+  onMutedChange,
+}: {
+  item: HarvestItem;
+  active: boolean;
+  muted: boolean;
+  onMutedChange: (muted: boolean) => void;
+}) {
   const mount = useRef<HTMLDivElement>(null);
   const player = useRef<YouTubePlayer | null>(null);
   const range = useRef(middleClip(item.durationSeconds));
@@ -16,9 +26,37 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
   );
   const [message, setMessage] = useState('');
   const [errorCode, setErrorCode] = useState<number>();
-  const [muted, setMuted] = useState(true);
   const [progress, setProgress] = useState(0);
   const [ready, setReady] = useState(false);
+  const playback = useRef({ active, muted });
+  const initialized = useRef(false);
+  const failed = useRef(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+
+  useLayoutEffect(() => {
+    playback.current = { active, muted };
+    const p = player.current;
+    if (!p || !initialized.current) return;
+    if (!active || muted || document.hidden) p.mute();
+    else p.unMute();
+  }, [active, muted]);
+
+  useEffect(() => {
+    const p = player.current;
+    if (!p || !initialized.current || failed.current) return;
+    if (!active || document.hidden) {
+      p.mute();
+      p.pauseVideo();
+      return;
+    }
+    const bounds = range.current;
+    if (bounds && p.getCurrentTime() >= bounds.end) {
+      p.seekTo(bounds.start, false);
+      setProgress(0);
+    }
+    // Keep the buffered media when a prepared card becomes active.
+    p.playVideo();
+  }, [active]);
 
   useEffect(() => {
     let disposed = false;
@@ -31,8 +69,10 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
     const started = Date.now();
     const fail = (text: string) => {
       if (disposed) return;
+      failed.current = true;
       if (timer) clearInterval(timer);
       if (readyTimer) clearTimeout(readyTimer);
+      player.current?.mute();
       player.current?.pauseVideo();
       setStatus('error');
       setMessage(text);
@@ -78,8 +118,11 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
             onReady: ({ target }) => {
               if (disposed) return;
               if (readyTimer) clearTimeout(readyTimer);
+              initialized.current = true;
               setReady(true);
-              target.mute();
+              if (playback.current.active && !playback.current.muted && !document.hidden)
+                target.unMute();
+              else target.mute();
               if (!configure(target, item.durationSeconds)) target.playVideo();
               timer = setInterval(() => {
                 if (disposed) return;
@@ -101,6 +144,7 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
                 }
                 const bounds = range.current;
                 if (!configured || !bounds) return;
+                if (!playback.current.active || document.hidden || failed.current) return;
                 const time = target.getCurrentTime();
                 if (target.getPlayerState() === 1) {
                   if (time >= bounds.end) {
@@ -118,17 +162,31 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
                 }
               }, 200);
             },
-            onStateChange: ({ data }) => {
+            onStateChange: ({ target, data }) => {
               if (disposed) return;
+              // loadVideoById fetches media; cueVideoById only fetches a thumbnail.
+              // Pause prepared clips at their first playable frame and retain the buffer.
+              if (data === 1 && (!playback.current.active || document.hidden || failed.current)) {
+                target.mute();
+                target.pauseVideo();
+                return;
+              }
+              if (failed.current) return;
               if (data === 0 && configured) {
                 ended = true;
                 setStatus('ended');
                 setProgress(1);
-              } else if (data === 1 && configured) setStatus('playing');
+              } else if (data === 1 && configured) {
+                setAutoplayBlocked(false);
+                setStatus('playing');
+              } else if (data === 3) setStatus('loading');
               else if (data === 2 && !ended) setStatus('paused');
             },
             onAutoplayBlocked: () => {
-              if (!disposed) setStatus('paused');
+              if (!disposed && !failed.current) {
+                setAutoplayBlocked(true);
+                setStatus('paused');
+              }
             },
             onError: ({ data }) => {
               if (disposed) return;
@@ -144,7 +202,10 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
       })
       .catch(() => fail('The player could not connect. Try again or open the original video.'));
     const pauseWhenHidden = () => {
-      if (document.hidden) player.current?.pauseVideo();
+      if (document.hidden) {
+        player.current?.mute();
+        player.current?.pauseVideo();
+      }
     };
     document.addEventListener('visibilitychange', pauseWhenHidden);
     return () => {
@@ -154,12 +215,16 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
       document.removeEventListener('visibilitychange', pauseWhenHidden);
       player.current?.destroy();
       player.current = null;
+      initialized.current = false;
+      failed.current = false;
     };
   }, [item.url, item.durationSeconds]);
 
   function togglePlayback() {
     const p = player.current;
-    if (!p) return;
+    if (!p || !active || failed.current) return;
+    if (muted) p.mute();
+    else p.unMute();
     if (status === 'playing') p.pauseVideo();
     else if (status === 'ended' && clip) {
       setProgress(0);
@@ -172,7 +237,12 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
   }
 
   return (
-    <div className="short-player" data-player-error={errorCode}>
+    <div
+      className="short-player"
+      data-player-error={errorCode}
+      aria-hidden={!active}
+      inert={!active}
+    >
       <div className="short-player-screen">
         <div className="short-player-mount" ref={mount} />
         <button
@@ -195,6 +265,11 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
           <div className="short-player-loading" role="status">
             Loading your clip…
           </div>
+        )}
+        {active && autoplayBlocked && status === 'paused' && (
+          <button className="short-player-start" onClick={togglePlayback}>
+            <Play size={24} /> {muted ? 'Tap to play' : 'Tap to play with sound'}
+          </button>
         )}
       </div>
       <div className="short-player-controls">
@@ -220,9 +295,12 @@ export default function ShortVideoPlayer({ item }: { item: HarvestItem }) {
           disabled={!ready || status === 'error'}
           aria-label={muted ? 'Unmute clip' : 'Mute clip'}
           onClick={() => {
-            if (muted) player.current?.unMute();
-            else player.current?.mute();
-            setMuted(!muted);
+            const p = player.current;
+            if (!p) return;
+            if (muted) p.unMute();
+            else p.mute();
+            onMutedChange(!muted);
+            if (autoplayBlocked) p.playVideo();
           }}
         >
           {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
