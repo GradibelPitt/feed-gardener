@@ -1,3 +1,4 @@
+import { apiSetting } from './api-settings.ts';
 import { domains } from './feed.ts';
 import type { ReadingLanguage } from './feed.ts';
 import { fetchWithTimeout } from './crawler/core.ts';
@@ -225,7 +226,7 @@ export async function fetchGithubTagSuggestions(
   const terms = queryTerms(tagIds, customTerms);
   if (!terms.length) return [];
   const headers: HeadersInit = { Accept: 'application/vnd.github+json' };
-  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  if (apiSetting('github')) headers.Authorization = `Bearer ${apiSetting('github')}`;
   const topicQueries = tagIds
     .filter((id) => allTags.some((tag) => tag.id === id))
     .map((id) => `topic:${id}`);

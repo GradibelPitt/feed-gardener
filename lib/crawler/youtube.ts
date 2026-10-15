@@ -2,6 +2,7 @@ import { classifyDomain, cleanText, fetchWithTimeout, keywordTags } from './core
 import type { HarvestItem } from './types.ts';
 import { videoSearchTerms } from './video-search-terms.ts';
 import { fetchPublicYouTubeSearchPage } from './youtube-public.ts';
+import { apiSetting, hasSavedApiConfiguration } from '../api-settings.ts';
 
 type SearchEntry = {
   id?: { videoId?: string };
@@ -24,6 +25,7 @@ function searchRuntime(): YouTubeSearchRuntime {
 }
 
 function youtubeSearchApiKey(): string {
+  if (hasSavedApiConfiguration('youtube')) return apiSetting('youtube');
   return (
     searchRuntime().apiKey ??
     (process.env.YOUTUBE_SEARCH_PROVIDER === 'official'

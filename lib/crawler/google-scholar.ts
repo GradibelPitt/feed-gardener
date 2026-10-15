@@ -1,5 +1,6 @@
 import { classifyDomain, cleanText, fetchWithTimeout, keywordTags, stableId } from './core.ts';
 import type { HarvestItem, SourceHealth } from './types.ts';
+import { apiSetting, hasSavedApiConfiguration } from '../api-settings.ts';
 
 const SCHOLAR_API = 'https://serpapi.com/search.json';
 type ScholarRuntime = { apiKey: string | null; revision: number };
@@ -10,6 +11,7 @@ function searchRuntime(): ScholarRuntime {
 }
 
 function scholarApiKey(): string {
+  if (hasSavedApiConfiguration('scholar')) return apiSetting('scholar');
   return searchRuntime().apiKey ?? process.env.SERPAPI_API_KEY?.trim() ?? '';
 }
 

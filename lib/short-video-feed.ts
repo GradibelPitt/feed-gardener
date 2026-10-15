@@ -32,14 +32,18 @@ export class ShortVideoSession {
   private scoringUnavailable = false;
   warning = '';
   private goals: string[];
+  private searching: boolean;
 
-  constructor(preferences: Preferences, request: typeof fetch = fetch) {
+  constructor(preferences: Preferences, request: typeof fetch = fetch, query = '') {
     this.preferences = preferences;
     this.request = request.bind(globalThis);
-    const interests = searchInterests({
-      ...preferences,
-      tags: preferences.tags.filter((id) => !preferences.blockedTags.includes(id)),
-    });
+    this.searching = !!query.trim();
+    const interests = this.searching
+      ? [{ labelEn: query.trim(), labelZh: query.trim() }]
+      : searchInterests({
+          ...preferences,
+          tags: preferences.tags.filter((id) => !preferences.blockedTags.includes(id)),
+        });
     this.selected = interests.map((topic) => ({ topic, pending: [], nearby: false }));
     this.goals = interests.map((topic) => topic.labelEn.slice(0, 80)).slice(0, 12);
     interests.forEach((topic) => this.topics.add(topic.labelEn.toLowerCase()));
@@ -210,11 +214,14 @@ export class ShortVideoSession {
     }
     const result = this.strong.splice(0, 4);
     if (result.length < 4) {
+      const allowNearby = !this.searching && this.preferences.shortsNearbyTopics !== false;
       const wasExpanded = this.expanded;
       this.expanded = true;
       // Lower-relevance results bridge the first shortage. Then reserve a slot for nearby topics.
-      result.push(...this.broad.splice(0, Math.max(0, (wasExpanded ? 3 : 4) - result.length)));
-      if (result.length < 4) {
+      result.push(
+        ...this.broad.splice(0, Math.max(0, (wasExpanded && allowNearby ? 3 : 4) - result.length)),
+      );
+      if (result.length < 4 && allowNearby) {
         let lanes = this.nearby.filter((lane) => lane.pending.length || lane.cursor !== null);
         if (!lanes.length) {
           try {

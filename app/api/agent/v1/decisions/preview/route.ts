@@ -1,3 +1,4 @@
+import { withAccountContext } from '@/lib/account-context';
 import {
   CandidateDecisionInputError,
   decideCandidate,
@@ -7,7 +8,7 @@ import { apiError, apiSuccess } from '@/lib/api-contract';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const input = validateCandidateDecisionInput(await request.json());
     const decision = await decideCandidate(input);
@@ -39,3 +40,5 @@ export async function POST(request: Request) {
     return apiError(502, 'DECISION_PROVIDER_FAILED', 'Decision provider failed.', true);
   }
 }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, false)(request); }

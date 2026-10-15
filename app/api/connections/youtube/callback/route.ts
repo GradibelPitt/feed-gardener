@@ -1,3 +1,4 @@
+import { withAccountContext } from '@/lib/account-context';
 import 'server-only';
 import { cookies } from 'next/headers';
 import { apiSuccess } from '@/lib/api-contract';
@@ -11,7 +12,7 @@ import {
 } from '@/lib/youtube-connection';
 
 export const runtime = 'nodejs';
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const jar = await cookies();
   let outcome = 'connected';
   try {
@@ -55,3 +56,5 @@ export async function GET(request: Request) {
     },
   );
 }
+
+export async function GET(request: Request) { return withAccountContext(handleGET, true)(request); }

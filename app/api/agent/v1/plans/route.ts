@@ -1,3 +1,4 @@
+import { withAccountContext } from '@/lib/account-context';
 import { createHash } from 'node:crypto';
 import { apiError, apiSuccess } from '@/lib/api-contract';
 import {
@@ -9,7 +10,7 @@ import {
 
 export const runtime = 'nodejs';
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let raw: Record<string, unknown>;
   try {
     raw = (await request.json()) as Record<string, unknown>;
@@ -41,3 +42,5 @@ export async function POST(request: Request) {
     { status: plan.executionStatus === 'policy_blocked' ? 409 : 201 },
   );
 }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, false)(request); }

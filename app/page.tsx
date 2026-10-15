@@ -19,6 +19,11 @@ import {
 import ResourceLibrary from '@/components/ResourceLibrary';
 import WorkspaceSidebar, { type WorkspacePage } from '@/components/WorkspaceSidebar';
 import MobileNavigation from '@/components/MobileNavigation';
+import ApiSettings from '@/components/ApiSettings';
+import AccountProvider from '@/components/AccountProvider';
+import AccountSettings from '@/components/AccountSettings';
+import { accountStorage } from '@/lib/account-storage';
+import WorkspaceSettings from '@/components/WorkspaceSettings';
 import ShortVideoFeed from '@/components/ShortVideoFeed';
 import FeederWorkspace from '@/components/FeederWorkspace';
 import { InterestIntroTarget } from '@/components/InterestIntro';
@@ -38,7 +43,9 @@ import { matchedHarvestTagIds, readFeederEvents, readTagJev, type FeederEvent } 
 
 type Page = WorkspacePage;
 const isWorkspacePage = (value: string): value is Page =>
-  ['discover', 'shorts', 'garden', 'library', 'saved'].includes(value);
+  ['discover', 'shorts', 'settings', 'library', 'saved', 'api', 'account'].includes(value);
+const readWorkspacePage = (value: string): Page =>
+  value === 'garden' ? 'settings' : isWorkspacePage(value) ? value : 'discover';
 const STORAGE = 'feed-gardener-demo-v1';
 const RESOURCES_STORAGE = 'feed-gardener-resources-v1';
 const COLLECTIONS_STORAGE = 'feed-gardener-collections-v1';
@@ -80,7 +87,7 @@ function englishDefaultPreferences(): Preferences {
 
 function readStoredSlice(key: string, fallback: unknown): unknown {
   try {
-    const value = localStorage.getItem(key);
+    const value = accountStorage.getItem(key);
     return value === null ? fallback : JSON.parse(value);
   } catch {
     return fallback;
@@ -140,6 +147,7 @@ function readPreferences(value: unknown): Preferences {
         ? raw.targetJevAverage
         : 8,
     customTags,
+    shortsNearbyTopics: raw.shortsNearbyTopics !== false,
     onlySelectedTags: raw.onlySelectedTags === true,
     requireAllSelectedTags: raw.requireAllSelectedTags === true,
     excludeUnselectedTags: raw.excludeUnselectedTags === true,
@@ -218,7 +226,9 @@ function Modal({
   );
 }
 
-export default function Home() {
+export default function Home() { return <AccountProvider><Workspace /></AccountProvider>; }
+
+function Workspace() {
   const locale = visibleInterfaceLocale;
   const [customTagInput, setCustomTagInput] = useState('');
   const [customTagError, setCustomTagError] = useState('');
@@ -241,7 +251,7 @@ export default function Home() {
 
   useEffect(() => {
     try {
-      const savedGuideStep = Number(localStorage.getItem(GUIDE_STORAGE));
+      const savedGuideStep = Number(accountStorage.getItem(GUIDE_STORAGE));
       if (Number.isInteger(savedGuideStep) && savedGuideStep >= 0 && savedGuideStep <= 6) {
         setGuideStep(savedGuideStep);
       }
@@ -277,8 +287,8 @@ export default function Home() {
           }
         }
         setPreferences(savedPreferences);
-        if (typeof stored.page === 'string' && isWorkspacePage(stored.page)) {
-          setPage(stored.page as Page);
+        if (typeof stored.page === 'string') {
+          setPage(readWorkspacePage(stored.page));
         }
       }
       const legacy = stored && typeof stored === 'object' ? stored : {};
@@ -301,9 +311,9 @@ export default function Home() {
       setCollections(savedCollections);
       setFeederEvents(savedEvents);
       try {
-        localStorage.setItem(RESOURCES_STORAGE, JSON.stringify(savedResources));
-        localStorage.setItem(COLLECTIONS_STORAGE, JSON.stringify(savedCollections));
-        localStorage.setItem(EVENTS_STORAGE, JSON.stringify(savedEvents));
+        accountStorage.setItem(RESOURCES_STORAGE, JSON.stringify(savedResources));
+        accountStorage.setItem(COLLECTIONS_STORAGE, JSON.stringify(savedCollections));
+        accountStorage.setItem(EVENTS_STORAGE, JSON.stringify(savedEvents));
         setSplitStorageReady(true);
       } catch {
         setToast(
@@ -315,7 +325,7 @@ export default function Home() {
     }
     const returnUrl = new URL(window.location.href);
     const requestedPage = returnUrl.hash.slice(1);
-    if (requestedPage) setPage(isWorkspacePage(requestedPage) ? requestedPage : 'discover');
+    if (requestedPage) setPage(readWorkspacePage(requestedPage));
     setReady(true);
     const update = () => setOffline(!navigator.onLine);
     update();
@@ -339,7 +349,7 @@ export default function Home() {
     const onHistoryChange = () => {
       const next = window.location.hash.slice(1);
       scrollPositions.current[page] = window.scrollY;
-      setPage(isWorkspacePage(next) ? next : 'discover');
+      setPage(readWorkspacePage(next));
     };
     window.addEventListener('popstate', onHistoryChange);
     window.addEventListener('hashchange', onHistoryChange);
@@ -353,7 +363,7 @@ export default function Home() {
   useEffect(() => {
     if (ready && splitStorageReady) {
       try {
-        localStorage.setItem(
+        accountStorage.setItem(
           STORAGE,
           JSON.stringify({
             preferences,
@@ -375,7 +385,7 @@ export default function Home() {
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(GUIDE_STORAGE, String(guideStep));
+      accountStorage.setItem(GUIDE_STORAGE, String(guideStep));
     } catch {
       // The current session still keeps the guide state.
     }
@@ -383,7 +393,7 @@ export default function Home() {
   useEffect(() => {
     if (!ready || !splitStorageReady) return;
     try {
-      localStorage.setItem(RESOURCES_STORAGE, JSON.stringify(resources));
+      accountStorage.setItem(RESOURCES_STORAGE, JSON.stringify(resources));
     } catch {
       setToast('Saved items could not be stored in this browser.');
     }
@@ -391,7 +401,7 @@ export default function Home() {
   useEffect(() => {
     if (!ready || !splitStorageReady) return;
     try {
-      localStorage.setItem(COLLECTIONS_STORAGE, JSON.stringify(collections));
+      accountStorage.setItem(COLLECTIONS_STORAGE, JSON.stringify(collections));
     } catch {
       setToast('Collections could not be stored in this browser.');
     }
@@ -399,7 +409,7 @@ export default function Home() {
   useEffect(() => {
     if (!ready || !splitStorageReady) return;
     try {
-      localStorage.setItem(EVENTS_STORAGE, JSON.stringify(feederEvents));
+      accountStorage.setItem(EVENTS_STORAGE, JSON.stringify(feederEvents));
     } catch {
       setToast('Feedback could not be stored in this browser.');
     }
@@ -492,18 +502,33 @@ export default function Home() {
             <Radio size={16} />
             {t(
               '当前离线。已保存内容仍可浏览，更改保存在本机。',
-              'You are offline. Saved items and local changes remain available.',
+              'You are offline. Keep this tab open until your account finishes syncing.',
             )}
           </div>
         )}
-        {page === 'shorts' ? (
+        {page === 'account' ? (
+          <AccountSettings />
+        ) : page === 'api' ? (
+          <ApiSettings />
+        ) : page === 'settings' ? (
+          <WorkspaceSettings
+            nearbyTopicsEnabled={preferences.shortsNearbyTopics !== false}
+            onNearbyTopicsChange={(enabled) =>
+              setPreferences((current) => ({
+                ...current,
+                shortsNearbyTopics: enabled,
+                version: current.version + 1,
+              }))
+            }
+          />
+        ) : page === 'shorts' ? (
           <ShortVideoFeed
             preferences={preferences}
             onEditInterests={manageInterests}
             onSave={saveResource}
             savedUrls={resources.map((resource) => resource.url)}
           />
-        ) : page === 'discover' || page === 'garden' ? (
+        ) : page === 'discover' ? (
           <main className="discover-page workspace-content" data-page={page}>
             <FeederWorkspace
               page={page}
@@ -889,7 +914,7 @@ export default function Home() {
           </button>
         </div>
       )}
-      {guideStep < 6 && (
+      {guideStep < 6 && page !== 'account' && (
         <button
           type="button"
           className="guide-skip-button"

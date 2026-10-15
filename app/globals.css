@@ -7724,3 +7724,5 @@ dialog.modal[open]::backdrop {
   letter-spacing: 0.14em;
   font-weight: 600;
 }
+
+.account-boot{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#f7f8f1;color:#36573d;padding:28px;text-align:center}.account-sync{position:fixed;z-index:70;bottom:12px;right:18px;max-width:min(600px,90vw);border:1px solid #dce5d4;border-radius:8px;background:#f7faf2;padding:8px 12px;color:#527048;font-size:12px;box-shadow:0 2px 12px #0001}.account-sync button{margin-left:8px;text-decoration:underline}.sidebar-bottom .nav-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:760px){.account-sync{bottom:78px;right:12px;font-size:11px}}

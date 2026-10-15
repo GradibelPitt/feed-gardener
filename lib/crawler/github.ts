@@ -1,3 +1,4 @@
+import { apiSetting } from '../api-settings.ts';
 import { XMLParser } from 'fast-xml-parser';
 import {
   classifyDomain,
@@ -73,9 +74,7 @@ async function fetchGithubSearchFallback(): Promise<HarvestItem[]> {
       headers: {
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
-        ...(process.env.GITHUB_TOKEN
-          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN.trim()}` }
-          : {}),
+        ...(apiSetting('github') ? { Authorization: `Bearer ${apiSetting('github').trim()}` } : {}),
       },
     },
     15_000,

@@ -19,7 +19,8 @@
     "test": "node --experimental-sqlite --experimental-strip-types --test lib/*.test.ts cli/*.test.ts",
     "test:mobile": "playwright test",
     "format": "prettier --write app components lib cli next.config.ts",
-    "format:check": "prettier --check app components lib cli next.config.ts"
+    "format:check": "prettier --check app components lib cli next.config.ts",
+    "dev:site": "vite --host 127.0.0.1 --port 3108"
   },
   "dependencies": {
     "cheerio": "1.2.0",

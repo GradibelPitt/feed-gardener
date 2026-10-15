@@ -1,12 +1,12 @@
+import { withAccountContext } from '@/lib/account-context';
 import { apiError, apiSuccess } from '@/lib/api-contract';
 import { harvestPublicSources } from '@/lib/crawler/harvest';
 import { LIVE_SOURCES, type LiveSource } from '@/lib/crawler/types';
-import { setYouTubeSearchApiKey } from '@/lib/crawler/youtube';
-import { setScholarApiKey } from '@/lib/crawler/google-scholar';
+import { clearApiConfiguration, saveApiConfiguration } from '@/lib/api-settings';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+async function handleGET(request: Request) {
   const url = new URL(request.url);
   const forceRefresh = url.searchParams.get('refresh') === 'true';
   const tags = url.searchParams
@@ -42,18 +42,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function PUT(request: Request) {
-  const url = new URL(request.url);
-  const requestOrigin = `${url.protocol}//${request.headers.get('host') ?? url.host}`;
-  let localHost = false;
-  try {
-    localHost = ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(requestOrigin).hostname);
-  } catch {
-    return apiError(403, 'ORIGIN_MISMATCH', 'Open this action from the local Feed Gardener app.');
-  }
-  if (!localHost || request.headers.get('origin') !== requestOrigin) {
-    return apiError(403, 'ORIGIN_MISMATCH', 'Open this action from the local Feed Gardener app.');
-  }
+async function handlePUT(request: Request) {
   if (!request.headers.get('content-type')?.startsWith('application/json')) {
     return apiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Expected a JSON request.');
   }
@@ -78,10 +67,20 @@ export async function PUT(request: Request) {
       ? apiError(422, 'INVALID_SCHOLAR_KEY', 'Enter a valid SerpApi key.')
       : apiError(422, 'INVALID_YOUTUBE_KEY', 'Enter a valid YouTube Data API key.');
   }
-  if (input.source === 'Google Scholar') setScholarApiKey(input.apiKey.trim());
-  else setYouTubeSearchApiKey(input.apiKey.trim());
+  try {
+    const id = input.source === 'Google Scholar' ? 'scholar' : 'youtube';
+    if (input.apiKey.trim())
+      saveApiConfiguration({ id, name: input.source, values: { apiKey: input.apiKey.trim() } });
+    else clearApiConfiguration(id);
+  } catch {
+    return apiError(500, 'SETTINGS_SAVE_FAILED', 'Could not save API settings.');
+  }
   return apiSuccess(
     { configured: input.apiKey.trim() !== '' },
     { headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } },
   );
 }
+
+export async function GET(request: Request) { return withAccountContext(handleGET, false)(request); }
+
+export async function PUT(request: Request) { return withAccountContext(handlePUT, true)(request); }

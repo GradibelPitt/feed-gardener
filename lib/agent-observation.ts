@@ -1,3 +1,4 @@
+import { apiSetting } from './api-settings.ts';
 export type ObservationRequest = {
   platform: 'youtube' | 'bilibili' | 'simulator';
   goalTags: string[];
@@ -107,9 +108,9 @@ export function parseObservationAnalysis(
 }
 
 export async function analyzeObservation(input: ObservationRequest): Promise<ObservationAnalysis> {
-  const baseUrl = process.env.MULTIMODAL_API_BASE_URL?.replace(/\/$/, '');
-  const apiKey = process.env.MULTIMODAL_API_KEY;
-  const model = process.env.MULTIMODAL_MODEL;
+  const baseUrl = apiSetting('multimodal', 'baseUrl')?.replace(/\/$/, '');
+  const apiKey = apiSetting('multimodal');
+  const model = apiSetting('multimodal', 'model');
   if (!baseUrl || !apiKey || !model) {
     throw new Error('MULTIMODAL_MODEL_NOT_CONFIGURED');
   }

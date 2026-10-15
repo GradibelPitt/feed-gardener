@@ -1,14 +1,16 @@
+import { withAccountContext } from '@/lib/account-context';
+import { apiSetting } from '@/lib/api-settings';
 import { AGENT_CONTRACT_VERSION, API_INTERFACES, apiSuccess } from '@/lib/api-contract';
 import { behaviorSignalKeys, defaultBehaviorWeights } from '@/lib/strategy';
 import { CANDIDATE_SCORE_POLICY, isJevConfigured } from '@/lib/candidate-decision';
 
 export const runtime = 'nodejs';
 
-export async function GET() {
+async function handleGET() {
   const multimodalConfigured = Boolean(
-    process.env.MULTIMODAL_API_BASE_URL &&
-    process.env.MULTIMODAL_API_KEY &&
-    process.env.MULTIMODAL_MODEL,
+    apiSetting('multimodal', 'baseUrl') &&
+    apiSetting('multimodal') &&
+    apiSetting('multimodal', 'model'),
   );
   return apiSuccess(
     {
@@ -70,3 +72,5 @@ export async function GET() {
     { headers: { 'Cache-Control': 'no-store' } },
   );
 }
+
+export async function GET(request: Request) { return withAccountContext(handleGET, false)(request); }

@@ -1,3 +1,4 @@
+import { withAccountContext } from '@/lib/account-context';
 import {
   evaluateObservedRuns,
   FeedObservationError,
@@ -7,7 +8,7 @@ import { apiError, apiSuccess } from '@/lib/api-contract';
 
 export const runtime = 'nodejs';
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const body = (await request.json()) as { runs?: unknown };
     const runs = parseObservedRuns(body.runs);
@@ -22,3 +23,5 @@ export async function POST(request: Request) {
     return apiError(500, 'FEED_EVALUATION_FAILED', 'Evaluation failed.');
   }
 }
+
+export async function POST(request: Request) { return withAccountContext(handlePOST, false)(request); }

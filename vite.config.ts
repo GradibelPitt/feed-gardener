@@ -9,6 +9,14 @@ export default defineConfig(async () => {
     resolve: {
       alias: [
         {
+          find: /^.*\/runtime-env\.ts$/,
+          replacement: fileURLToPath(new URL('./lib/runtime-env.worker.ts', import.meta.url)),
+        },
+        {
+          find: /^.*\/account-db\.ts$/,
+          replacement: fileURLToPath(new URL('./lib/account-db.worker.ts', import.meta.url)),
+        },
+        {
           find: './score-cache.ts',
           replacement: fileURLToPath(new URL('./lib/score-cache.worker.ts', import.meta.url)),
         },
@@ -22,6 +30,14 @@ export default defineConfig(async () => {
         config: {
           main: 'vinext/server/fetch-handler',
           compatibility_flags: ['nodejs_compat'],
+          d1_databases: [
+            {
+              binding: 'DB',
+              database_name: 'feeder-accounts',
+              database_id: 'local-feeder-accounts',
+              migrations_dir: 'drizzle',
+            },
+          ],
         },
       }),
     ],

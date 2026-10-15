@@ -1,4 +1,6 @@
 'use client';
+import { accountStorage } from '@/lib/account-storage';
+import { useAccount } from './AccountProvider';
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -133,7 +135,7 @@ function urlMatchesSource(value: string, source: LiveSource): boolean {
 
 export function readSocialImports(): HarvestItem[] {
   try {
-    const stored = JSON.parse(localStorage.getItem(SOCIAL_STORAGE) || '[]') as unknown;
+    const stored = JSON.parse(accountStorage.getItem(SOCIAL_STORAGE) || '[]') as unknown;
     if (!Array.isArray(stored)) return [];
     return stored.filter((item): item is HarvestItem =>
       Boolean(
@@ -170,7 +172,8 @@ export default function SourceBoards({
   const [socialImports, setSocialImports] = useState<HarvestItem[]>([]);
   const [socialBusy, setSocialBusy] = useState(false);
   const [socialError, setSocialError] = useState('');
-  const [localKeyConfiguration, setLocalKeyConfiguration] = useState(false);
+  const { account } = useAccount();
+  const localKeyConfiguration = Boolean(account);
   const [sourceApiKey, setSourceApiKey] = useState('');
   const [sourceKeyBusy, setSourceKeyBusy] = useState(false);
   const [sourceKeyError, setSourceKeyError] = useState('');
@@ -185,9 +188,7 @@ export default function SourceBoards({
   }, [initialPayload]);
 
   useEffect(() => {
-    setLocalKeyConfiguration(
-      ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname),
-    );
+
   }, []);
 
   const loadSource = async (source: LiveSource, refresh = false) => {
@@ -339,7 +340,7 @@ export default function SourceBoards({
       await loadSource(source, true);
     } catch {
       setSourceKeyError(
-        t('无法清除本机 key，请重试。', 'Could not clear the local key. Try again.'),
+        t('无法清除本机 key，请重试。', 'Could not clear your account key. Try again.'),
       );
     } finally {
       setSourceKeyBusy(false);
@@ -367,7 +368,7 @@ export default function SourceBoards({
         ...socialImports.filter((item) => item.url !== result.item?.url),
       ].slice(0, 30);
       setSocialImports(next);
-      localStorage.setItem(SOCIAL_STORAGE, JSON.stringify(next));
+      accountStorage.setItem(SOCIAL_STORAGE, JSON.stringify(next));
       onSocialImport?.(result.item);
       setSocialUrl('');
     } catch {
@@ -495,7 +496,7 @@ export default function SourceBoards({
                           disabled={loadingSource !== null || sourceKeyBusy}
                           onClick={() => void clearSourceKey()}
                         >
-                          {t('清除本机 key', 'Clear local key')}
+                          {t('清除本机 key', 'Clear account key')}
                         </button>
                       )}
                   </>
@@ -639,7 +640,7 @@ export default function SourceBoards({
                 <p>
                   {t(
                     '站点所有者可使用 SerpApi key 连接此来源。',
-                    'The site owner can connect this source with a SerpApi key.',
+                    'Sign in to connect this source with your own SerpApi key.',
                   )}
                 </p>
               ) : (
@@ -677,11 +678,11 @@ export default function SourceBoards({
                     {isScholar
                       ? t(
                           '通过 SerpApi 搜索 Google Scholar；key 仅在本机内存保存，搜索时发送给 SerpApi。',
-                          'Searches Google Scholar through SerpApi. Your key stays in local server memory and is sent to SerpApi for searches.',
+                          'Your key is encrypted in your account and sent to SerpApi only for searches.',
                         )
                       : t(
                           '只存于本机服务内存；搜索时会发送给 Google 官方 API，重启后失效。',
-                          'Kept in local server memory until restart and sent to the official Google API for searches.',
+                          'Your key is encrypted in your account and sent to the official Google API only for searches.',
                         )}
                   </p>
                   <a
