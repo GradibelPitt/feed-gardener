@@ -153,14 +153,14 @@ export default function FeederWorkspace({
   const scrollIgnoreUntilRef = useRef(0);
   const [feedFilters, setFeedFilters] = useState({
     type: 'all',
-    source: 'all',
+    source: [] as string[],
     date: 'all',
     sort: 'default',
   });
   const filterDialogRef = useRef<HTMLDialogElement>(null);
   const filterTitleId = useId();
-  const activeFilterCount = Object.entries(feedFilters).filter(
-    ([key, value]) => value !== (key === 'sort' ? 'default' : 'all'),
+  const activeFilterCount = Object.entries(feedFilters).filter(([key, value]) =>
+    Array.isArray(value) ? value.length > 0 : value !== (key === 'sort' ? 'default' : 'all'),
   ).length;
   const filterGroups = [
     {
@@ -380,7 +380,7 @@ export default function FeederWorkspace({
     setPayload(null);
     setLoaded(false);
     setDisplayCount(20);
-    setFeedFilters({ type: 'all', source: 'all', date: 'all', sort: 'default' });
+    setFeedFilters({ type: 'all', source: [], date: 'all', sort: 'default' });
     ratingsRef.current.clear();
     ratedTitlesRef.current.clear();
     ratingContextRef.current = '';
@@ -639,7 +639,7 @@ export default function FeederWorkspace({
         item.section !== feedFilters.type
       )
         return false;
-      if (feedFilters.source !== 'all' && item.source !== feedFilters.source) return false;
+      if (feedFilters.source.length && !feedFilters.source.includes(item.source)) return false;
       if (feedFilters.date !== 'all') {
         const published = Date.parse(item.publishedAt ?? '');
         if (
@@ -956,12 +956,30 @@ export default function FeederWorkspace({
               {group.options.map(([value, label]) => (
                 <label key={value}>
                   <input
-                    type="radio"
+                    type={group.key === 'source' ? 'checkbox' : 'radio'}
                     name={`feed-filter-${group.key}`}
                     value={value}
-                    checked={feedFilters[group.key] === value}
+                    checked={
+                      group.key === 'source'
+                        ? value === 'all'
+                          ? feedFilters.source.length === 0
+                          : feedFilters.source.includes(value)
+                        : feedFilters[group.key] === value
+                    }
                     onChange={() => {
-                      setFeedFilters((current) => ({ ...current, [group.key]: value }));
+                      setFeedFilters((current) =>
+                        group.key === 'source'
+                          ? {
+                              ...current,
+                              source:
+                                value === 'all'
+                                  ? []
+                                  : current.source.includes(value)
+                                    ? current.source.filter((source) => source !== value)
+                                    : [...current.source, value],
+                            }
+                          : { ...current, [group.key]: value },
+                      );
                       setDisplayCount(20);
                     }}
                   />
@@ -977,7 +995,7 @@ export default function FeederWorkspace({
             className={styles.secondary}
             disabled={!activeFilterCount}
             onClick={() => {
-              setFeedFilters({ type: 'all', source: 'all', date: 'all', sort: 'default' });
+              setFeedFilters({ type: 'all', source: [], date: 'all', sort: 'default' });
               setDisplayCount(20);
             }}
           >
