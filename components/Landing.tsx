@@ -129,7 +129,6 @@ export default function Landing({ onEnter }: Props) {
 
   return (
     <div className={styles.page} data-landing>
-      <div className={styles.grid} aria-hidden="true" />
       <div className={styles.grain} aria-hidden="true" />
 
       <header className={styles.nav}>
