@@ -44,3 +44,12 @@
   color: #fff;
   font-weight: 700;
 }
+
+/* ==== night theme: generated colour overrides (keep at end of file) ==== */
+:global(:root[data-theme='night']) .card {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.138);
+}
+:global(:root[data-theme='night']) .card button {
+  background: #a6f26b;
+  color: #0b100d;
+}

@@ -1601,3 +1601,541 @@
     min-height: 44px;
   }
 }
+
+/* ==== night theme: generated colour overrides (keep at end of file) ==== */
+:global(:root[data-theme='night']) .workspace {
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .filterCount {
+  background: #a6f26b;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .filterDialog {
+  border: 1px solid #25302a;
+  background: #19221d;
+  color: #c4cbc6;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.44);
+}
+:global(:root[data-theme='night']) .filterDialog::backdrop {
+  background: rgba(227, 223, 206, 0.333);
+}
+:global(:root[data-theme='night']) .filterGroups legend {
+  border-bottom: 1px solid #25302a;
+}
+:global(:root[data-theme='night']) .filterGroups label span {
+  color: #8b9a90;
+}
+:global(:root[data-theme='night']) .filterGroups input:checked + span {
+  color: #c4cbc6;
+  background: #111814;
+}
+:global(:root[data-theme='night']) .filterGroups input:focus-visible + span {
+  outline: 2px solid #92a097;
+}
+:global(:root[data-theme='night']) .filterFooter {
+  border-top: 1px solid #25302a;
+}
+:global(:root[data-theme='night']) .interestsPanel {
+  border: 1px solid #25302a;
+  background: #19221d;
+}
+:global(:root[data-theme='night']) .expandButton {
+  border: 1px solid #29342d;
+  background: #1c221e;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .domainList {
+  color: #97a49b;
+}
+:global(:root[data-theme='night']) .matchRules {
+  border-top: 1px solid #1f2923;
+}
+:global(:root[data-theme='night']) .matchRules legend {
+  color: #a6b2aa;
+}
+:global(:root[data-theme='night']) .matchRules label {
+  color: #b0e48d;
+}
+:global(:root[data-theme='night']) .matchRules input {
+  accent-color: #92a097;
+}
+:global(:root[data-theme='night']) .matchHint {
+  color: #7a8c80;
+}
+:global(:root[data-theme='night']) .eyebrow {
+  color: #829288;
+}
+:global(:root[data-theme='night']) .header p,
+:global(:root[data-theme='night']) .panel p {
+  color: #8b9a90;
+}
+:global(:root[data-theme='night']) .tabs {
+  background: #121814;
+}
+:global(:root[data-theme='night']) .tabs button,
+:global(:root[data-theme='night']) .secondary,
+:global(:root[data-theme='night']) .actions button,
+:global(:root[data-theme='night']) .actions a,
+:global(:root[data-theme='night']) .undo button {
+  border: 1px solid #29342d;
+  background: #1c221e;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .tabs button[aria-selected='true'] {
+  background: #1c221e;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.293);
+}
+:global(:root[data-theme='night']) .secondary:hover,
+:global(:root[data-theme='night']) .actions button:hover:not(:disabled),
+:global(:root[data-theme='night']) .actions a:hover,
+:global(:root[data-theme='night']) .undo button:hover {
+  border-color: #8d9c92;
+  background: #151d18;
+}
+:global(:root[data-theme='night']) .actions button:disabled {
+  color: #829287;
+  background: #131a16;
+}
+:global(:root[data-theme='night']) .searchField {
+  background: #1c221e;
+  border: 1px solid #28332d;
+  color: #a6b2aa;
+}
+:global(:root[data-theme='night']) .searchClear {
+  color: #829287;
+}
+:global(:root[data-theme='night']) .searchClear:hover {
+  background: #131a16;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .searchBanner {
+  border: 1px solid #29342d;
+  background: #151d18;
+  color: #b7c0ba;
+}
+:global(:root[data-theme='night']) .feedControls {
+  color: #7a8c80;
+}
+:global(:root[data-theme='night']) .scorePanel {
+  border: 1px solid #28382f;
+  background: #161e19;
+}
+:global(:root[data-theme='night']) .scoreState {
+  background: #1f2b24;
+  color: #b7c0ba;
+}
+:global(:root[data-theme='night']) .scorePanel p {
+  color: #96a49b;
+}
+:global(:root[data-theme='night']) .scoreSlider input {
+  accent-color: #b7c0ba;
+}
+:global(:root[data-theme='night']) .scoreProgressText {
+  color: #a6b2aa;
+}
+:global(:root[data-theme='night']) .scoreProgress {
+  accent-color: #92da62;
+}
+:global(:root[data-theme='night']) .ratingBadge {
+  background: #131a15;
+  color: #b7c0ba;
+}
+:global(:root[data-theme='night']) .ratingBadge progress {
+  accent-color: #92da62;
+}
+:global(:root[data-theme='night']) .scoringPlaceholder {
+  border: 1px solid #25302a;
+  color: #95a39a;
+  background: #19221d;
+}
+:global(:root[data-theme='night']) .skeleton {
+  background: #1f2b24;
+}
+:global(:root[data-theme='night']) .feedControls label {
+  background: #1c221e;
+  border: 1px solid #28332d;
+}
+:global(:root[data-theme='night']) .targetHeading strong {
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .feedControls .targetControl input[type='range'] {
+  accent-color: #bac3bd;
+}
+:global(:root[data-theme='night']) .rangeEndpoints {
+  color: #7a8c80;
+}
+:global(:root[data-theme='night']) .simulationStatus {
+  color: #92a097;
+}
+:global(:root[data-theme='night']) .cover {
+  background: #121814;
+}
+:global(:root[data-theme='night']) .youtubeResults p {
+  color: #8b9a90;
+}
+:global(:root[data-theme='night']) .youtubeHeading label {
+  color: #95a39a;
+}
+:global(:root[data-theme='night']) .youtubeHeading select {
+  border: 1px solid #29342d;
+  background: #19221d;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .searchGroupHeading {
+  border-bottom: 1px solid #25302a;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .card,
+:global(:root[data-theme='night']) .panel,
+:global(:root[data-theme='night']) .empty,
+:global(:root[data-theme='night']) .warning,
+:global(:root[data-theme='night']) .undo {
+  border: 1px solid #25302a;
+  background: #19221d;
+}
+:global(:root[data-theme='night']) .cardMeta {
+  color: #839388;
+}
+:global(:root[data-theme='night']) .card h2,
+:global(:root[data-theme='night']) .panel h2 {
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .card p {
+  color: #89998e;
+}
+:global(:root[data-theme='night']) .chips span {
+  background: #131b16;
+  border: 1px solid #212d26;
+  color: #92a097;
+}
+:global(:root[data-theme='night']) .why {
+  border-top: 1px solid #111714;
+  color: #93a198;
+}
+:global(:root[data-theme='night']) .why small {
+  color: #4b5850;
+}
+:global(:root[data-theme='night']) .actions a {
+  background: #a6f26b;
+  border-color: #a6f26b;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .actions a:hover {
+  color: #bac3bd;
+}
+:global(:root[data-theme='night']) .moreActions summary {
+  border: 1px solid #29342d;
+  background: #1c221e;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .moreActions > div {
+  border: 1px solid #29342d;
+  background: #19221d;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.311);
+}
+:global(:root[data-theme='night']) .empty,
+:global(:root[data-theme='night']) .warning,
+:global(:root[data-theme='night']) .undo {
+  color: #95a39a;
+}
+:global(:root[data-theme='night']) .warning {
+  border-color: #2c3d33;
+  background: #151d19;
+}
+:global(:root[data-theme='night']) .sectionHeading > span {
+  color: #839388;
+}
+:global(:root[data-theme='night']) .nearbyRefresh {
+  color: #9ba8a0;
+}
+:global(:root[data-theme='night']) .nearbyChips span {
+  border: 1px solid #212d26;
+  background: #161e19;
+  color: #9eaaa2;
+}
+:global(:root[data-theme='night']) .helpHint {
+  color: #9ba8a0;
+}
+:global(:root[data-theme='night']) .helpIcon {
+  border: 1px solid #3d5146;
+  background: #19221d;
+}
+:global(:root[data-theme='night']) .helpHint:hover .helpIcon,
+:global(:root[data-theme='night']) .helpHint:focus-within .helpIcon {
+  background: #131a15;
+}
+:global(:root[data-theme='night']) .helpIcon:focus-visible {
+  outline: 2px solid #b7c0ba;
+}
+:global(:root[data-theme='night']) .helpText {
+  border: 1px solid #2e3f35;
+  background: #1c221e;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.328);
+  color: #a6b1aa;
+}
+:global(:root[data-theme='night']) .workspaceVideoActive .header {
+  background: rgba(20, 28, 24, 0.949);
+}
+:global(:root[data-theme='night']) .workspaceVideoMode .toolbar {
+  border: 1px solid #25302a;
+  background: rgba(22, 31, 26, 0.949);
+}
+:global(:root[data-theme='night']) .olderVideos {
+  color: #95a39a;
+}
+:global(:root[data-theme='night']) .loadMore {
+  border: 1px solid #29342d;
+  background: #141b17;
+  color: #bac3bd;
+}
+:global(:root[data-theme='night']) .loadMore:hover {
+  background: #1f2a23;
+}
+@media (max-width: 760px), (max-width: 960px) and (hover: none) and (pointer: coarse) {
+:global(:root[data-theme='night']) .mobileVideoMenu summary,
+:global(:root[data-theme='night']) .mobileVideoMenu button {
+  border: 1px solid #29342d;
+  background: #1c221e;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .mobileVideoMenu[open] summary {
+  background: #1f2b24;
+}
+:global(:root[data-theme='night']) .mobileVideoMenu > div {
+  border: 1px solid #29342d;
+  background: #19221d;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.311);
+}
+:global(:root[data-theme='night']) .mobileVideoMenu :is(summary, button):focus-visible {
+  outline: 2px solid #92a097;
+}
+:global(:root[data-theme='night']) .mobileSettingsBar button {
+  border: 1px solid #29342d;
+  background: #19221d;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .mobileSettingsBar button[aria-expanded='true'] {
+  background: #1f2b24;
+  border-color: #465c4f;
+}
+:global(:root[data-theme='night']) .mobileSettingsBar button:focus-visible {
+  outline: 2px solid #92a097;
+}
+:global(:root[data-theme='night']) .searchField:focus-within {
+  outline: 2px solid #92a097;
+}
+}
+
+/* ==== night theme: hand-written polish ==== */
+:global(:root[data-theme='night']) .workspace {
+  --glass: linear-gradient(155deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.02) 55%), rgba(13, 20, 16, 0.55);
+  --glass-line: rgba(255, 255, 255, 0.11);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 32px 64px -34px rgba(0, 0, 0, 0.75);
+}
+:global(:root[data-theme='night']) .header {
+  background: transparent;
+}
+:global(:root[data-theme='night']) .eyebrow {
+  color: #a6f26b;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+:global(:root[data-theme='night']) .header h1 {
+  color: #f2efe6;
+  font-family: var(--font-display);
+  font-size: clamp(34px, 3.4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+:global(:root[data-theme='night']) .interestsPanel,
+:global(:root[data-theme='night']) .scorePanel,
+:global(:root[data-theme='night']) .card,
+:global(:root[data-theme='night']) .filterDialog {
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+:global(:root[data-theme='night']) .card {
+  transition: border-color var(--dur-base) var(--ease-out-soft), transform var(--dur-base) var(--ease-out-soft);
+}
+:global(:root[data-theme='night']) .card:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+:global(:root[data-theme='night']) .interestsPanel h2,
+:global(:root[data-theme='night']) .scorePanelTop h2 {
+  color: #f2efe6;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+:global(:root[data-theme='night']) .card h2,
+:global(:root[data-theme='night']) .card h3 {
+  color: #f2efe6;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  line-height: 1.22;
+}
+:global(:root[data-theme='night']) .card p {
+  color: #b4bfb7;
+}
+:global(:root[data-theme='night']) .cardMeta {
+  color: #8d9a91;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+:global(:root[data-theme='night']) .tabs {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  padding: 4px;
+}
+:global(:root[data-theme='night']) .tabs button {
+  border-radius: 999px;
+  color: #b4bfb7;
+  padding: 8px 18px;
+}
+:global(:root[data-theme='night']) .tabs button[aria-selected='true'] {
+  background: #f2efe6;
+  box-shadow: none;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .secondary,
+:global(:root[data-theme='night']) .expandButton,
+:global(:root[data-theme='night']) .actions button,
+:global(:root[data-theme='night']) .actions a,
+:global(:root[data-theme='night']) .moreActions summary,
+:global(:root[data-theme='night']) .undo button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  color: #f2efe6;
+}
+:global(:root[data-theme='night']) .secondary:hover,
+:global(:root[data-theme='night']) .expandButton:hover,
+:global(:root[data-theme='night']) .actions button:hover:not(:disabled),
+:global(:root[data-theme='night']) .moreActions summary:hover,
+:global(:root[data-theme='night']) .undo button:hover {
+  background: rgba(166, 242, 107, 0.1);
+  border-color: rgba(166, 242, 107, 0.6);
+  color: #a6f26b;
+}
+:global(:root[data-theme='night']) .secondary:disabled,
+:global(:root[data-theme='night']) .actions button:disabled {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #7f8c83;
+}
+:global(:root[data-theme='night']) .refreshButton {
+  background: linear-gradient(180deg, #c4fa8e, #93e457);
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 36px -14px rgba(166, 242, 107, 0.6);
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .refreshButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #d2fca6, #a0ec66);
+  border-color: transparent;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .actions a,
+:global(:root[data-theme='night']) .actions a:hover {
+  background: #f2efe6;
+  border-color: transparent;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .actions a:hover {
+  background: #ffffff;
+}
+:global(:root[data-theme='night']) .searchField {
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+:global(:root[data-theme='night']) .searchField:focus-within {
+  border-color: rgba(166, 242, 107, 0.7);
+  box-shadow: 0 0 0 4px rgba(166, 242, 107, 0.14);
+}
+:global(:root[data-theme='night']) .searchField input {
+  color: #f2efe6;
+}
+:global(:root[data-theme='night']) .searchField input::placeholder {
+  color: #7f8c83;
+}
+:global(:root[data-theme='night']) .chips span,
+:global(:root[data-theme='night']) .domainList span {
+  background: rgba(166, 242, 107, 0.1);
+  border: 1px solid rgba(166, 242, 107, 0.22);
+  border-radius: 999px;
+  color: #c9f5a4;
+}
+:global(:root[data-theme='night']) .ratingBadge {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  color: #8d9a91;
+  font-family: var(--font-mono);
+  padding: 12px 0 0;
+  width: 100%;
+}
+:global(:root[data-theme='night']) .ratingBadge strong {
+  color: #a6f26b;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+:global(:root[data-theme='night']) .ratingBadge progress,
+:global(:root[data-theme='night']) .scoreProgress {
+  accent-color: #a6f26b;
+}
+:global(:root[data-theme='night']) .why {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+:global(:root[data-theme='night']) .why summary {
+  color: #a6f26b;
+}
+:global(:root[data-theme='night']) .scoreSlider input,
+:global(:root[data-theme='night']) .feedControls input[type='range'] {
+  accent-color: #a6f26b;
+}
+:global(:root[data-theme='night']) .scoreState,
+:global(:root[data-theme='night']) .simulationStatus {
+  color: #a6f26b;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+:global(:root[data-theme='night']) .videoColumnsControl {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  color: #b4bfb7;
+}
+:global(:root[data-theme='night']) .videoColumnsControl select {
+  background: transparent;
+  border: 0;
+  color: #f2efe6;
+}
+:global(:root[data-theme='night']) .moreActions > div {
+  background: #131b16;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.8);
+}
+:global(:root[data-theme='night']) .workspaceVideoActive .header {
+  background: linear-gradient(180deg, rgba(11, 16, 13, 0.82) 60%, rgba(11, 16, 13, 0));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+:global(:root[data-theme='night']) .workspaceVideoMode .header h1,
+:global(:root[data-theme='night']) .header h1 {
+  margin-bottom: 14px;
+}

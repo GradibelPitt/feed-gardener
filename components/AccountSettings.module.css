@@ -235,3 +235,78 @@
     width: 100%;
   }
 }
+
+/* ==== night theme: generated colour overrides (keep at end of file) ==== */
+:global(:root[data-theme='night']) .page {
+  color: #c3cbc6;
+}
+:global(:root[data-theme='night']) .eyebrow {
+  color: #7e8f84;
+}
+:global(:root[data-theme='night']) .intro {
+  color: #7c8d82;
+}
+:global(:root[data-theme='night']) .card {
+  background: #1c221e;
+  border: 1px solid #212c25;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.043);
+}
+:global(:root[data-theme='night']) .tabs {
+  background: #151d18;
+}
+:global(:root[data-theme='night']) .page button {
+  border: 1px solid #233129;
+  color: #b7c0ba;
+  background: #1c221e;
+}
+:global(:root[data-theme='night']) .tabs button[aria-selected='true'] {
+  background: #1c221e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.112);
+}
+:global(:root[data-theme='night']) .page input {
+  border: 1px solid #233129;
+  background: #18211c;
+  color: #c5cdc8;
+}
+:global(:root[data-theme='night']) .page input:focus {
+  outline: 2px solid #466051;
+}
+:global(:root[data-theme='night']) .page .primary {
+  background: #a6f26b;
+  border-color: #a6f26b;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .hint {
+  color: #7a8c80;
+}
+:global(:root[data-theme='night']) .emblem {
+  background: #101713;
+  color: #92a096;
+}
+:global(:root[data-theme='night']) .aside p {
+  color: #8d9c92;
+}
+:global(:root[data-theme='night']) .aside small {
+  border-top: 1px solid #212e27;
+  color: #4e5c54;
+}
+:global(:root[data-theme='night']) .identity > span {
+  background: #121915;
+}
+:global(:root[data-theme='night']) .identity p {
+  color: #819186;
+}
+:global(:root[data-theme='night']) .divider {
+  background: #1f2b24;
+}
+:global(:root[data-theme='night']) .page .danger {
+  color: #d0776c;
+  border-color: #3b211a;
+}
+:global(:root[data-theme='night']) .deleteBox {
+  background: #271811;
+}
+:global(:root[data-theme='night']) .error {
+  background: #241610;
+  color: #d0776c;
+}

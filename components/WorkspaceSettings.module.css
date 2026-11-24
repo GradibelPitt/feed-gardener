@@ -185,3 +185,53 @@
     gap: 16px;
   }
 }
+
+/* ==== night theme: generated colour overrides (keep at end of file) ==== */
+:global(:root[data-theme='night']) .page {
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .eyebrow {
+  color: #87978c;
+}
+:global(:root[data-theme='night']) .header p,
+:global(:root[data-theme='night']) .copy p {
+  color: #87978c;
+}
+:global(:root[data-theme='night']) .presets button {
+  border: 1px solid #25302a;
+  background: #19221d;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .presets button:hover,
+:global(:root[data-theme='night']) .presets button:focus-visible,
+:global(:root[data-theme='night']) .presets .selectedPreset {
+  border-color: #b7c0ba;
+  background: #131a15;
+}
+:global(:root[data-theme='night']) .customDuration input {
+  border: 1px solid #2f3e35;
+  background: #1c221e;
+  color: #c4cbc6;
+}
+:global(:root[data-theme='night']) .customDuration input:focus-visible {
+  outline: 2px solid #b7c0ba;
+}
+:global(:root[data-theme='night']) .section {
+  border: 1px solid #25302a;
+  background: #19221d;
+}
+:global(:root[data-theme='night']) .row {
+  border-top: 1px solid #1f2b24;
+}
+:global(:root[data-theme='night']) .track {
+  background: #4a574f;
+}
+:global(:root[data-theme='night']) .track::after {
+  background: #19221d;
+}
+:global(:root[data-theme='night']) .toggle input:checked + .track {
+  background: #a6f26b;
+}
+:global(:root[data-theme='night']) .toggle input:focus-visible + .track {
+  outline: 2px solid #b7c0ba;
+}

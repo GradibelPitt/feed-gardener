@@ -427,3 +427,127 @@
     flex-wrap: wrap;
   }
 }
+
+/* ==== night theme: generated colour overrides (keep at end of file) ==== */
+:global(:root[data-theme='night']) .eyebrow {
+  color: #4f5c54;
+}
+:global(:root[data-theme='night']) .header p,
+:global(:root[data-theme='night']) .overview p {
+  color: #7c8d82;
+}
+:global(:root[data-theme='night']) .primary {
+  background: #a6f26b;
+  color: #0b100d;
+}
+:global(:root[data-theme='night']) .overview {
+  background: #131a16;
+  border: 1px solid #202c25;
+}
+:global(:root[data-theme='night']) .overviewIcon {
+  background: #212d26;
+  color: #9faba3;
+}
+:global(:root[data-theme='night']) .count {
+  color: #9ca9a0;
+}
+:global(:root[data-theme='night']) .count > span {
+  color: #4a574f;
+}
+:global(:root[data-theme='night']) .toolbar h2 span {
+  background: #111814;
+  color: #89988e;
+}
+:global(:root[data-theme='night']) .search {
+  border: 1px solid #202b25;
+  background: #1c221e;
+  color: #49564e;
+}
+:global(:root[data-theme='night']) .search input {
+  color: #c4ccc7;
+}
+:global(:root[data-theme='night']) .card {
+  background: #1c221e;
+  border: 1px solid #202b25;
+}
+:global(:root[data-theme='night']) .mark {
+  background: #131a16;
+  color: #9faca3;
+}
+:global(:root[data-theme='night']) .mark[data-platform='youtube'] {
+  background: #251310;
+  color: #6d372f;
+}
+:global(:root[data-theme='night']) .mark[data-platform='github'] {
+  background: #151917;
+  color: #bbc4be;
+}
+:global(:root[data-theme='night']) .mark[data-platform='scholar'] {
+  background: #161e19;
+  color: #476252;
+}
+:global(:root[data-theme='night']) .mark[data-platform='instagram'] {
+  background: #240f18;
+  color: #6c3a52;
+}
+:global(:root[data-theme='night']) .status {
+  color: #4a564f;
+}
+:global(:root[data-theme='night']) .status i {
+  background: #36403a;
+}
+:global(:root[data-theme='night']) .status[data-configured='true'] {
+  color: #92da62;
+}
+:global(:root[data-theme='night']) .status[data-configured='true'] i {
+  background: #92da62;
+}
+:global(:root[data-theme='night']) .card > p {
+  color: #4c5951;
+}
+:global(:root[data-theme='night']) .cardBottom {
+  border-top: 1px solid #131b16;
+}
+:global(:root[data-theme='night']) .cardBottom > span {
+  color: #45514a;
+}
+:global(:root[data-theme='night']) .cardBottom button {
+  color: #9dde71;
+}
+:global(:root[data-theme='night']) .note {
+  color: #4a574f;
+}
+:global(:root[data-theme='night']) .success {
+  color: #9dde71;
+  background: #121915;
+}
+:global(:root[data-theme='night']) .error {
+  color: #ce796e;
+}
+:global(:root[data-theme='night']) .dialog {
+  background: #1c221e;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.414);
+}
+:global(:root[data-theme='night']) .dialogHeader > button {
+  background: #151d18;
+}
+:global(:root[data-theme='night']) .required {
+  color: #49564e;
+}
+:global(:root[data-theme='night']) .field input {
+  border: 1px solid #212d26;
+  color: #c4ccc7;
+  background: #18211b;
+}
+:global(:root[data-theme='night']) .inputWrap button {
+  color: #87978c;
+}
+:global(:root[data-theme='night']) .formNote {
+  color: #4d5a52;
+}
+:global(:root[data-theme='night']) .remove {
+  color: #bf867e;
+}
+:global(:root[data-theme='night']) .page :is(button, input):focus-visible {
+  outline: 2px solid #7b8c81;
+}

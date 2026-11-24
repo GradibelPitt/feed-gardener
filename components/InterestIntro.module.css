@@ -133,3 +133,17 @@
     animation: none;
   }
 }
+
+/* ==== night theme: generated colour overrides (keep at end of file) ==== */
+:global(:root[data-theme='night']) .ink {
+  color: #753832;
+}
+:global(:root[data-theme='night']) .instruction {
+  border: 1px solid #47261e;
+  background: #281a11;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.328);
+  color: #cab7b0;
+}
+:global(:root[data-theme='night']) .instruction strong {
+  color: #cd776f;
+}

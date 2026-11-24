@@ -21,6 +21,7 @@ import WorkspaceSidebar, { type WorkspacePage } from '@/components/WorkspaceSide
 import MobileNavigation from '@/components/MobileNavigation';
 import ApiSettings from '@/components/ApiSettings';
 import AccountProvider from '@/components/AccountProvider';
+import HomeGate from '@/components/HomeGate';
 import AccountSettings from '@/components/AccountSettings';
 import { accountStorage } from '@/lib/account-storage';
 import WorkspaceSettings from '@/components/WorkspaceSettings';
@@ -234,7 +235,15 @@ function Modal({
   );
 }
 
-export default function Home() { return <AccountProvider><Workspace /></AccountProvider>; }
+export default function Home() {
+  return (
+    <HomeGate>
+      <AccountProvider>
+        <Workspace />
+      </AccountProvider>
+    </HomeGate>
+  );
+}
 
 function Workspace() {
   const locale = visibleInterfaceLocale;
