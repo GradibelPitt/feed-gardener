@@ -65,4 +65,4 @@ For implementation details, see the [API contract](docs/interface_contract.md) a
 
 ## License
 
-Feed Gardener is licensed under the [MIT License](LICENSE). Bundled third-party materials retain their own notices: [DM Sans (SIL Open Font License 1.1)](public/fonts/dmsans-OFL.txt) and the [TypeSafe AI skill (MIT)](.agents/skills/typesafe-ai/LICENSE).
+Feed Gardener is licensed under the [MIT License](LICENSE). Bundled third-party materials retain their own notices: [DM Sans (SIL Open Font License 1.1)](public/fonts/dmsans-OFL.txt) the [TypeSafe AI skill (MIT)](.agents/skills/typesafe-ai/LICENSE), and the [GSAP AI skills (MIT)](.agents/skills/gsap-core/LICENSE).

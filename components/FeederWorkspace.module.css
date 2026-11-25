@@ -178,7 +178,7 @@
   display: none;
 }
 
-.cardDetails:not([hidden]) {
+:global(:root:not(.gsap-motion)) .cardDetails:not([hidden]) {
   animation: sourcesFadeIn 180ms ease-out both;
 }
 

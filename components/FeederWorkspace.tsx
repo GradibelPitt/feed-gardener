@@ -1066,6 +1066,7 @@ export default function FeederWorkspace({
           <div
             id={interestsDetailsId}
             className={styles.cardDetails}
+            data-motion-panel
             hidden={!interestsDetailsOpen}
           >
             <div className={styles.manageInterestsRow}>
@@ -1203,6 +1204,7 @@ export default function FeederWorkspace({
           <div
             id={relevanceDetailsId}
             className={styles.cardDetails}
+            data-motion-panel
             hidden={!relevanceDetailsOpen}
           >
             {scoringState && <strong className={styles.scoreState}>{scoringState}</strong>}
@@ -1345,7 +1347,7 @@ export default function FeederWorkspace({
                             : `${dualSearchTerms[group === 2 ? 1 : 0]} only`}
                         </h2>
                       )}
-                    <article className={styles.card} data-video={isVideo}>
+                    <article className={styles.card} data-video={isVideo} data-motion-item>
                       <div className={styles.cardMeta}>
                         <span>{item.source}</span>
                         <span>·</span>

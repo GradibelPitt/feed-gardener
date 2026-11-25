@@ -851,6 +851,7 @@ export default function ResourceLibrary({
                         <li
                           key={resource.id}
                           className={`rlib-item ${isEditing ? 'is-editing' : ''}`}
+                          data-motion-item
                         >
                           <div className="rlib-item-row">
                             <div

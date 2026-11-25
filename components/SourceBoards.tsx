@@ -405,6 +405,7 @@ export default function SourceBoards({
             <button
               key={section.id}
               className={`source-section-card source-section-${section.id} ${active === section.id ? 'active' : ''}`}
+              data-motion-item
               role="tab"
               aria-selected={active === section.id}
               aria-controls="source-board-panel"

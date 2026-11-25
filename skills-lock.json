@@ -15,6 +15,24 @@
       "style": "motion-driven",
       "styleId": 15,
       "notes": "Applied motion-driven style (row 15): 300-400ms hover microinteractions, entrance animations, scroll-triggered reveal via IntersectionObserver / view-timeline, respects prefers-reduced-motion. Colors and icons are locked; only animation logic and unified type/button surface added."
+    },
+    "gsap-skills": {
+      "source": "greensock/gsap-skills",
+      "sourceType": "github",
+      "ref": "aed9cfd3277740755f6bfc1155c7aa645403b760",
+      "skillPath": "skills/gsap-*/SKILL.md",
+      "installed": [
+        "gsap-core",
+        "gsap-timeline",
+        "gsap-react",
+        "gsap-performance",
+        "gsap-utils",
+        "gsap-plugins",
+        "gsap-scrolltrigger",
+        "gsap-frameworks"
+      ],
+      "installPath": ".agents/skills",
+      "notes": "Applied in components/MotionRoot.tsx: useGSAP + gsap.matchMedia (prefers-reduced-motion), delegated press spring, toggle icon pop, staggered list entrance, dialog/disclosure reveals. Transforms and autoAlpha only; colors, layout and icons untouched."
     }
   }
 }

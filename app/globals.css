@@ -7431,6 +7431,19 @@ body {
   transition-duration: var(--dur-instant);
 }
 
+/* GSAP interaction layer (components/MotionRoot.tsx) --------- *
+ * While GSAP drives a press it owns the transform, so the CSS
+ * transform transition must step aside or the two easings fight.
+ * Colour, shadow and border transitions keep running. */
+.is-gsap-press {
+  transition-property: background, background-color, color, border-color, box-shadow, filter,
+    opacity !important;
+}
+/* Shell fade is replaced by the per-page GSAP entrance. */
+.gsap-motion .motion-shell {
+  animation: none;
+}
+
 /* Typography rhythm ---------------------------------------- *
  * Establishes a consistent baseline where explicit sizes are
  * absent. Any component that already sets its own font-size
@@ -7555,7 +7568,7 @@ a:hover {
 }
 
 /* Modal entrance */
-dialog.modal[open] {
+:root:not(.gsap-motion) dialog.modal[open] {
   animation: motion-scale-in var(--dur-slow) var(--ease-out-back) both;
 }
 dialog.modal[open]::backdrop {
